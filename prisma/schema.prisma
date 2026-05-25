@@ -1,0 +1,281 @@
+datasource db {
+  provider   = "postgresql"
+  extensions = [postgis]
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+enum Role {
+  CUSTOMER
+  WORKER
+  ADMIN
+}
+
+enum WorkerStatus {
+  OFFLINE
+  IDLE
+  ASSIGNED
+  EN_ROUTE
+  IN_PROGRESS
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  EN_ROUTE
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PriceType {
+  FIXED
+  HOURLY
+  DISTANCE_BASED
+}
+
+enum PaymentMethod {
+  CARD
+  UPI
+  WALLET
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum TransactionType {
+  BOOKING_PAYMENT
+  WORKER_PAYOUT
+  REFUND
+  PLATFORM_FEES
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  phoneNumber      String           @unique
+  passwordHash     String
+  firstName        String
+  lastName         String
+  role             Role             @default(CUSTOMER)
+  profilePictureUrl String?
+  fcmToken         String?
+  rating           Float            @default(5.0)
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  
+  customerProfile  CustomerProfile?
+  workerProfile    WorkerProfile?
+  
+  @@index([phoneNumber])
+  @@index([role])
+}
+
+model CustomerProfile {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model WorkerProfile {
+  id                String                 @id @default(uuid())
+  userId            String                 @unique
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cityId            String
+  city              City                   @relation(fields: [cityId], references: [id])
+  serviceCategoryId String
+  serviceCategory   ServiceCategory        @relation(fields: [serviceCategoryId], references: [id])
+  
+  status            WorkerStatus           @default(OFFLINE)
+  isOnline          Boolean                @default(false)
+  currentLat        Float?
+  currentLng        Float?
+  
+  // PostGIS spatial point for indexing/queries
+  location          Unsupported("geography(Point, 4326)")?
+  
+  verificationDocUrl String?
+  isVerified        Boolean                @default(false)
+  totalEarnings     Decimal                @default(0.00) @db.Decimal(10, 2)
+  
+  bookings          Booking[]
+  earningsLogs      WorkerEarningLog[]
+  locationHistory   WorkerLocationHistory[]
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  @@index([status, isOnline])
+  @@index([cityId])
+  @@index([serviceCategoryId])
+}
+
+model City {
+  id            String               @id @default(uuid())
+  name          String               @unique
+  state         String
+  country       String
+  lat           Float
+  lng           Float
+  // PostGIS Polygon for operational boundaries (geofencing)
+  boundary      Unsupported("geography(Polygon, 4326)")?
+  isActive      Boolean              @default(true)
+  
+  workers       WorkerProfile[]
+  pricings      CityServicePricing[]
+  bookings      Booking[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([isActive])
+}
+
+model ServiceCategory {
+  id          String          @id @default(uuid())
+  name        String          @unique
+  slug        String          @unique
+  description String?
+  iconUrl     String?
+  isActive    Boolean         @default(true)
+  
+  services    Service[]
+  workers     WorkerProfile[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model Service {
+  id          String               @id @default(uuid())
+  categoryId  String
+  category    ServiceCategory      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  priceType   PriceType            @default(FIXED)
+  isActive    Boolean              @default(true)
+  
+  pricings    CityServicePricing[]
+  bookings    Booking[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([categoryId])
+}
+
+model CityServicePricing {
+  id             String   @id @default(uuid())
+  cityId         String
+  city           City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  serviceId      String
+  service        Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  basePrice      Decimal  @db.Decimal(10, 2) // Charged for booking + first km/min
+  pricePerKm     Decimal  @db.Decimal(10, 2)
+  pricePerMinute Decimal  @db.Decimal(10, 2)
+  minimumPrice   Decimal  @db.Decimal(10, 2)
+  platformFee    Decimal  @default(2.00) @db.Decimal(10, 2) // Admin commission
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([cityId, serviceId])
+}
+
+model Booking {
+  id              String         @id @default(uuid())
+  customerId      String
+  customer        CustomerProfile @relation(fields: [customerId], references: [id])
+  workerId        String?
+  worker          WorkerProfile? @relation(fields: [workerId], references: [id])
+  serviceId       String
+  service         Service        @relation(fields: [serviceId], references: [id])
+  cityId          String
+  city            City           @relation(fields: [cityId], references: [id])
+  
+  status          BookingStatus  @default(PENDING)
+  
+  pickupLat       Float
+  pickupLng       Float
+  pickupAddress   String
+  scheduledAt     DateTime       @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  
+  estimatedDistance Float?       // in kilometers
+  estimatedDuration Int?         // in seconds
+  
+  totalPrice      Decimal        @db.Decimal(10, 2)
+  platformCut     Decimal        @db.Decimal(10, 2)
+  workerCut       Decimal        @db.Decimal(10, 2)
+  
+  cancellationReason String?
+  cancelledBy     Role?
+  
+  transactions    Transaction[]
+  earningsLogs    WorkerEarningLog[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([customerId])
+  @@index([workerId])
+  @@index([cityId])
+  @@index([status])
+}
+
+model Transaction {
+  id             String          @id @default(uuid())
+  bookingId      String
+  booking        Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount         Decimal         @db.Decimal(10, 2)
+  type           TransactionType @default(BOOKING_PAYMENT)
+  currency       String          @default("USD")
+  paymentMethod  PaymentMethod
+  paymentStatus  PaymentStatus   @default(PENDING)
+  gatewayTxnId   String?         @unique
+  gatewayPayload Json?
+  
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([bookingId])
+}
+
+model WorkerEarningLog {
+  id        String   @id @default(uuid())
+  workerId  String
+  worker    WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+  amount    Decimal  @db.Decimal(10, 2)
+  taxDeducted Decimal @default(0.00) @db.Decimal(10, 2)
+  netPayout Decimal  @db.Decimal(10, 2)
+  isSettled Boolean  @default(false)
+  settledAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workerId])
+  @@index([bookingId])
+}
+
+model WorkerLocationHistory {
+  id        String        @id @default(uuid())
+  workerId  String
+  worker    WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  latitude  Float
+  longitude Float
+  recordedAt DateTime     @default(now())
+
+  @@index([workerId, recordedAt])
+}

@@ -1,0 +1,16 @@
+node_modules
+logs
+uploads
+.env
+.git
+.github
+Dockerfile
+docker-compose.yml
+README.md
+CVS
+.svn
+.hg
+.gitattributes
+.gitignore
+.prettierrc
+.eslintrc.json
