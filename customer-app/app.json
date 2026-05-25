@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "NearPro Customer",
+    "slug": "nearpro-customer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.nearpro.customer"
+    }
+  }
+}
