@@ -1,0 +1,53 @@
+/* App.css */
+
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mode-bar {
+  position: fixed;
+  top: 72px;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: #0F1117;
+  color: white;
+  z-index: 99;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 600px) {
+  .mode-bar {
+    padding: 0 12px;
+  }
+}
+
+.mode-toggle-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-toggle-btn:hover {
+  background: #d60a65;
+  box-shadow: 0 2px 8px rgba(247, 15, 121, 0.3);
+}
+
+/* Spacer for main content due to header + mode bar */
+main, .booking-container, .tracker-container {
+  margin-top: 132px !important;
+}

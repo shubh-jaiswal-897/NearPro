@@ -1,17 +1,17 @@
 export const Theme = {
   colors: {
-    background: "#0c0d12",
-    surface: "#161824",
-    surfaceLight: "#202334",
-    primary: "#7c3aed", // violet-600
-    primaryLight: "#9333ea",
-    text: "#f3f4f6", // gray-100
-    textMuted: "#9ca3af", // gray-400
+    background: "#09090b", // Deep Onyx
+    surface: "#18181b", // Zinc 900
+    surfaceLight: "#27272a", // Zinc 800
+    primary: "#d4af37", // Metallic Gold
+    primaryLight: "#fde047", // Yellow 300
+    text: "#fafafa", // Zinc 50
+    textMuted: "#a1a1aa", // Zinc 400
     success: "#10b981", // emerald-500
     danger: "#ef4444", // red-500
-    border: "#2d3142",
-    glassBorder: "rgba(255, 255, 255, 0.08)",
-    glassBg: "rgba(22, 24, 36, 0.7)",
+    border: "rgba(212, 175, 55, 0.15)", // Gold tint border
+    glassBorder: "rgba(212, 175, 55, 0.15)",
+    glassBg: "rgba(24, 24, 27, 0.7)", // Zinc 900 glass
   },
   spacing: {
     xs: 4,

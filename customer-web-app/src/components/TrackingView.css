@@ -1,0 +1,224 @@
+/* TrackingView.css */
+
+.tracker-container {
+  max-width: 1000px;
+  margin: 110px auto 60px auto;
+  padding: 0 24px;
+}
+
+.tracker-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 32px;
+  align-items: stretch;
+}
+
+@media (max-width: 800px) {
+  .tracker-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tracker-panel {
+  background: white;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  padding: 32px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 480px;
+  animation: fadeIn 0.3s ease;
+}
+
+.tracker-title-box {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.tracker-status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  background: #FEF3C7;
+  color: #D97706;
+  border: 1px solid #FCD34D;
+}
+
+.status-accepted {
+  background: #DBEAFE;
+  color: #2563EB;
+  border: 1px solid #93C5FD;
+}
+
+.status-inprogress {
+  background: #E0F2FE;
+  color: #0284C7;
+  border: 1px solid #7DD3FC;
+}
+
+.status-completed {
+  background: #D1FAE5;
+  color: #059669;
+  border: 1px solid #6EE7B7;
+}
+
+/* Radar scanner style */
+.radar-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  flex: 1;
+}
+
+.radar-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 2px solid rgba(247, 15, 121, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.radar-circle::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  border-top-color: transparent;
+  border-left-color: transparent;
+  animation: scan 2s linear infinite;
+}
+
+.radar-core {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(247, 15, 121, 0.08);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Worker profile styles */
+.worker-profile-card {
+  background: #F9FAFB;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(15, 17, 23, 0.06);
+  margin-bottom: 24px;
+  animation: slideUp 0.3s ease;
+}
+
+.worker-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.worker-photo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--secondary);
+}
+
+.worker-info {
+  flex: 1;
+}
+
+.worker-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.worker-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.worker-rating-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #FFF9FC;
+  border: 1px solid rgba(247, 15, 121, 0.2);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  width: fit-content;
+  margin-top: 4px;
+}
+
+.contact-action {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  border-top: 1px solid rgba(15, 17, 23, 0.06);
+  padding-top: 16px;
+}
+
+.contact-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 17, 23, 0.1);
+  background: white;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.contact-btn:hover {
+  background: #F9FAFB;
+  border-color: var(--text-main);
+}
+
+.contact-btn.primary-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+}
+
+.contact-btn.primary-btn:hover {
+  background: #d60a65;
+  box-shadow: 0 4px 12px rgba(247, 15, 121, 0.15);
+}
+
+/* Map frame */
+.tracker-map-frame {
+  height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  min-height: 480px;
+}

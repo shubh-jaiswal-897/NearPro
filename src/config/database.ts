@@ -1,5 +1,11 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 import logger from "../utils/logger";
+
+const connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgrespassword@localhost:5432/nearpro?schema=public";
+const pool = new pg.Pool({ connectionString });
+const adapter = new PrismaPg(pool);
 
 declare global {
   // eslint-disable-next-line no-var
@@ -7,6 +13,7 @@ declare global {
 }
 
 export const prisma = global.prisma || new PrismaClient({
+  adapter,
   log: [
     { emit: "event", level: "query" },
     { emit: "stdout", level: "error" },
