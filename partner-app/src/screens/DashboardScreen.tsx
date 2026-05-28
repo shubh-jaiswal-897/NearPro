@@ -10,10 +10,10 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStore";
 import socketService from "../services/socket";
 import api from "../services/api";
-import { getCurrentLocation } from "../../customer-app/src/utils/location"; // share helper
+import { getCurrentLocation } from "../utils/location"; // local location helper
 import Theme from "../components/Theme";
 
 interface DashboardScreenProps {

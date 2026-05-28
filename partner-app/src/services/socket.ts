@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStore";
 
 const SOCKET_URL = "http://localhost:4000";
 

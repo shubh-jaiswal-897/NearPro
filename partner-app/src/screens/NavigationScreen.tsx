@@ -8,10 +8,11 @@ import {
   Alert,
   Dimensions,
 } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "../components/MapView";
 import socketService from "../services/socket";
 import api from "../services/api";
-import { getCurrentLocation } from "../../customer-app/src/utils/location";
+import * as SecureStore from "../utils/secureStore";
+import { getCurrentLocation } from "../utils/location";
 import Theme from "../components/Theme";
 
 interface NavigationScreenProps {

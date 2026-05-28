@@ -11,7 +11,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStore";
 import api from "../services/api";
 import Theme from "../components/Theme";
 

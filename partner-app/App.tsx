@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, Platform } from "react-native";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "./src/utils/secureStore";
 import AuthScreen from "./src/screens/AuthScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import NavigationScreen from "./src/screens/NavigationScreen";
