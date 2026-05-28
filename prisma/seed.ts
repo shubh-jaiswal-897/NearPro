@@ -2,7 +2,10 @@ import prisma from "../src/config/database";
 import { Role, WorkerStatus } from "@prisma/client";
 import { Redis } from "ioredis";
 import bcrypt from "bcrypt";
-const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
+const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
+  maxRetriesPerRequest: 1,
+  enableOfflineQueue: false,
+});
 
 async function main() {
   console.log("🌱 Starting NearPro database seed...");
@@ -23,19 +26,26 @@ async function main() {
   // Clean raw city table (must delete via queryRaw due to PostGIS polygons)
   await prisma.$executeRawUnsafe(`DELETE FROM "City"`);
 
-  // Clear Redis geo keys
-  console.log("🧹 Cleaning Redis active workers geo sets...");
-  const keys = await redis.keys("active_workers:*");
-  if (keys.length > 0) {
-    await redis.del(...keys);
-  }
-  const heartbeats = await redis.keys("worker:heartbeat:*");
-  if (heartbeats.length > 0) {
-    await redis.del(...heartbeats);
-  }
-  const metadatas = await redis.keys("worker:metadata:*");
-  if (metadatas.length > 0) {
-    await redis.del(...metadatas);
+  // Clear Redis geo keys if online
+  let redisOnline = false;
+  try {
+    await redis.ping();
+    redisOnline = true;
+    console.log("📡 Redis is online. Cleaning Redis active workers geo sets...");
+    const keys = await redis.keys("active_workers:*");
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+    const heartbeats = await redis.keys("worker:heartbeat:*");
+    if (heartbeats.length > 0) {
+      await redis.del(...heartbeats);
+    }
+    const metadatas = await redis.keys("worker:metadata:*");
+    if (metadatas.length > 0) {
+      await redis.del(...metadatas);
+    }
+  } catch (err) {
+    console.log("⚠️ Redis is offline. Skipping Redis cleanup.");
   }
 
   // 2. Create operating city (Bengaluru) with PostGIS polygon boundary
@@ -260,31 +270,40 @@ async function main() {
       WHERE "id" = $3
     `, w.lng, w.lat, profile.id);
 
-    // 6. Seed active worker into Redis index for realtime location tracking lookup
-    const geoKey = `active_workers:${cityId}`;
-    const heartbeatKey = `worker:heartbeat:${user.id}`;
-    const metadataKey = `worker:metadata:${user.id}`;
+    // 6. Seed active worker into Redis index if online
+    if (redisOnline) {
+      try {
+        const geoKey = `active_workers:${cityId}`;
+        const heartbeatKey = `worker:heartbeat:${user.id}`;
+        const metadataKey = `worker:metadata:${user.id}`;
 
-    // Add coordinates to Redis Geo set (member is the userId, same as backend query mapping)
-    await redis.geoadd(geoKey, w.lng, w.lat, user.id);
+        // Add coordinates to Redis Geo set (member is the userId, same as backend query mapping)
+        await redis.geoadd(geoKey, w.lng, w.lat, user.id);
 
-    // Save current status metadata with a generous TTL of 24 hours (86400s) for continuous local testing
-    await redis.set(
-      metadataKey,
-      JSON.stringify({ lat: w.lat, lng: w.lng, heading: 90, updatedAt: Date.now() }),
-      "EX",
-      86400
-    );
+        // Save current status metadata with a generous TTL of 24 hours (86400s) for continuous local testing
+        await redis.set(
+          metadataKey,
+          JSON.stringify({ lat: w.lat, lng: w.lng, heading: 90, updatedAt: Date.now() }),
+          "EX",
+          86400
+        );
 
-    // Heartbeat TTL (24 hours) linking to the active city
-    await redis.set(heartbeatKey, cityId, "EX", 86400);
+        // Heartbeat TTL (24 hours) linking to the active city
+        await redis.set(heartbeatKey, cityId, "EX", 86400);
+        console.log(`📡 Registered active Worker in Redis: ${w.firstName} ${w.lastName}`);
+      } catch (redisErr) {
+        console.log(`⚠️ Failed to register active Worker in Redis: ${w.firstName}`);
+      }
+    }
 
     console.log(`📡 Registered active Worker: ${w.firstName} ${w.lastName} (Category: ${w.category.name}) at [${w.lat}, ${w.lng}]`);
   }
 
   console.log("🙌 Seeding database records completed successfully!");
   await prisma.$disconnect();
-  await redis.quit();
+  if (redisOnline) {
+    await redis.quit();
+  }
   process.exit(0);
 }
 
