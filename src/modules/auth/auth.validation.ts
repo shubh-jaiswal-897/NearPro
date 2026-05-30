@@ -15,6 +15,7 @@ export const registerSchema = z.object({
     cityId: z.string().uuid("Invalid City ID").optional(),
     serviceCategoryId: z.string().uuid("Invalid Service Category ID").optional(),
     verificationDocUrl: z.string().url("Invalid doc URL").optional(),
+    aadhaarNumber: z.string().regex(/^\d{12}$/, "Aadhaar number must be exactly 12 digits").optional(),
   }).refine((data) => {
     if (data.role === Role.WORKER) {
       return !!data.cityId && !!data.serviceCategoryId;

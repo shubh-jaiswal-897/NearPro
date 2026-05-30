@@ -1,6 +1,29 @@
-import React from "react";
-import { Sparkles, Star, Shield, Clock, Utensils, ChefHat, Shirt, Wind, Bath, LogOut } from "lucide-react";
-import { ServiceCategory } from "../types";
+import React, { useState } from "react";
+import { Sparkles, Star, Shield, Clock, Utensils, ChefHat, Shirt, Wind, Bath, LogOut, ChevronDown } from "lucide-react";
+import type { ServiceCategory } from "../types";
+
+const FAQS = [
+  {
+    question: "How fast does a NearPro helper arrive?",
+    answer: "Our helpers are distributed across local zones in Gorakhpur. Typically, a verified helper will reach your doorstep within 10-15 minutes of booking confirmation."
+  },
+  {
+    question: "Are NearPro helpers background-verified?",
+    answer: "Yes, absolutely. Every helper goes through a strict verification process, including government-issued ID checks (Aadhaar & PAN) and professional training verification before they can accept bookings."
+  },
+  {
+    question: "How does the pricing work? Is it fixed or hourly?",
+    answer: "NearPro uses a transparent hourly billing model. You pay for the exact duration of help you select (e.g. 1 hour, 2 hours) plus a small flat platform fee. There are no hidden charges."
+  },
+  {
+    question: "What is NearPro Kavach?",
+    answer: "NearPro Kavach is our safety ecosystem. It includes real-time tracking of the helper's route, instant SOS distress signals, and decibel-level monitoring on the helper's application to ensure safety for both customers and professionals."
+  },
+  {
+    question: "Can I schedule a booking for later?",
+    answer: "Yes! While NearPro specializes in instant, on-demand dispatch, you can easily schedule a helper for any specific date and time using our checkout wizard."
+  }
+];
 import "./LandingPage.css";
 
 interface LandingPageProps {
@@ -20,6 +43,11 @@ export default function LandingPage({
   onLogout,
   categories,
 }: LandingPageProps) {
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  const toggleFaq = (index: number) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
+  };
   
   // Icon selector mapping category slugs to Lucide icons
   const getIcon = (slug: string) => {
@@ -49,8 +77,9 @@ export default function LandingPage({
           </a>
           <nav className="nav-links">
             <a href="#services" className="nav-link">Services</a>
-            <a href="#safety" className="nav-link">Safety</a>
+            <a href="#cities" className="nav-link">Cities</a>
             <a href="#about" className="nav-link">About</a>
+            <a href="#faq" className="nav-link">FAQ</a>
           </nav>
           <div className="header-actions">
             {token && user ? (
@@ -63,7 +92,7 @@ export default function LandingPage({
             ) : (
               <button className="btn-signin" onClick={onSignInClick}>Sign In</button>
             )}
-            <button className="btn-primary" onClick={() => onSelectCategory("dishwashing")}>Book Now</button>
+            <button className="btn-primary" onClick={() => onSelectCategory(categories[0]?.slug || "dishwashing")}>Book Now</button>
           </div>
         </div>
       </header>
@@ -74,7 +103,7 @@ export default function LandingPage({
           <div style={{ animation: "fadeIn 1s ease" }}>
             <div className="hero-badge">
               <Shield size={14} />
-              <span>Trusted by 12L+ families across Bengaluru</span>
+              <span>Trusted by 12L+ families across Gorakhpur</span>
             </div>
             <h1 className="hero-title">
               Instant Home Services in <span>Minutes</span>
@@ -83,7 +112,7 @@ export default function LandingPage({
               Book trained & background-verified home service professionals for cleaning, utensils washing, laundry & more - instantly, whenever you need.
             </p>
             <div className="hero-actions-container">
-              <button className="btn-primary" style={{ padding: "14px 32px", fontSize: "16px" }} onClick={() => onSelectCategory("dishwashing")}>
+              <button className="btn-primary" style={{ padding: "14px 32px", fontSize: "16px" }} onClick={() => onSelectCategory(categories[0]?.slug || "dishwashing")}>
                 Book a Helper
               </button>
             </div>
@@ -179,6 +208,31 @@ export default function LandingPage({
         </div>
       </section>
 
+      {/* Operational Cities Section */}
+      <section id="cities" className="section-cities">
+        <h2 className="section-title">Operational Cities</h2>
+        <p className="section-subtitle" style={{ marginBottom: "32px" }}>
+          NearPro is currently active in Gorakhpur, bringing background-verified helpers to your doorstep.
+        </p>
+        <div className="cities-grid">
+          <div className="city-card active">
+            <div className="city-badge">Active</div>
+            <h3 className="city-name">Gorakhpur</h3>
+            <p className="city-desc">Active in Indiranagar, HSR Layout, Koramangala, Whitefield, and more.</p>
+          </div>
+          <div className="city-card upcoming">
+            <div className="city-badge-upcoming">Upcoming</div>
+            <h3 className="city-name">Mumbai</h3>
+            <p className="city-desc">Expanding our verified house help services to Mumbai soon.</p>
+          </div>
+          <div className="city-card upcoming">
+            <div className="city-badge-upcoming">Upcoming</div>
+            <h3 className="city-name">Delhi NCR</h3>
+            <p className="city-desc">Bringing 10-minute on-demand help to the capital region soon.</p>
+          </div>
+        </div>
+      </section>
+
       {/* Safety Section (Snabbit Kavach model) */}
       <section id="safety" className="section-kavach">
         <div className="kavach-card">
@@ -209,6 +263,65 @@ export default function LandingPage({
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="section-about">
+        <div className="about-container">
+          <div className="about-content">
+            <h2 className="about-title">About NearPro</h2>
+            <p className="about-desc">
+              NearPro is India's leading on-demand platform for instant house help services. Inspired by the convenience of quick commerce, we are reshaping how families hire helpers for daily tasks. 
+            </p>
+            <p className="about-desc">
+              By leveraging advanced routing technology and keeping our operations local, we match you with background-verified helpers in your neighborhood within minutes, while ensuring fair wages and dignified employment for our partners.
+            </p>
+          </div>
+          <div className="about-stats">
+            <div className="stat-card">
+              <h4>10 Min</h4>
+              <p>Average ETA</p>
+            </div>
+            <div className="stat-card">
+              <h4>100%</h4>
+              <p>Verified Partners</p>
+            </div>
+            <div className="stat-card">
+              <h4>12 Lakh+</h4>
+              <p>Happy Bookings</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="section-faq">
+        <h2 className="section-title">Frequently Asked Questions</h2>
+        <p className="section-subtitle" style={{ marginBottom: "24px" }}>
+          Everything you need to know about NearPro on-demand home help services.
+        </p>
+
+        <div className="faq-container">
+          {FAQS.map((faq, index) => {
+            const isActive = openFaqIndex === index;
+            return (
+              <div key={index} className={`faq-item ${isActive ? "active" : ""}`}>
+                <button className="faq-question" onClick={() => toggleFaq(index)}>
+                  <span>{faq.question}</span>
+                  <ChevronDown className="faq-icon" size={18} />
+                </button>
+                <div 
+                  className="faq-answer-wrapper" 
+                  style={{ maxHeight: isActive ? "200px" : "0" }}
+                >
+                  <div className="faq-answer">
+                    {faq.answer}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 

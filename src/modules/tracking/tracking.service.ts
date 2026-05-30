@@ -1,5 +1,24 @@
 import { redis } from "../../config/redis";
+import { prisma } from "../../config/database";
 import logger from "../../utils/logger";
+
+function calculateHaversineDistance(
+  coord1: { lat: number; lng: number },
+  coord2: { lat: number; lng: number }
+): number {
+  const R = 6371; // Earth radius in km
+  const phi1 = (coord1.lat * Math.PI) / 180;
+  const phi2 = (coord2.lat * Math.PI) / 180;
+  const deltaPhi = ((coord2.lat - coord1.lat) * Math.PI) / 180;
+  const deltaLambda = ((coord2.lng - coord1.lng) * Math.PI) / 180;
+
+  const a =
+    Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+    Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distance in km
+}
 
 export interface NearbyWorkerResult {
   workerId: string;
@@ -89,6 +108,37 @@ export class TrackingService {
     radiusInKm: number = 5
   ): Promise<NearbyWorkerResult[]> {
     try {
+      // Fallback: If Redis is offline/disconnected, find online IDLE workers in DB and calculate distance manually
+      if (redis.status !== "ready") {
+        logger.warn("Redis is offline. Performing geospatial query via fallback DB query.");
+        const workers = await prisma.workerProfile.findMany({
+          where: {
+            cityId,
+            isOnline: true,
+            status: "IDLE",
+            currentLat: { not: null },
+            currentLng: { not: null },
+          },
+        });
+
+        const results: NearbyWorkerResult[] = [];
+        for (const worker of workers) {
+          if (worker.currentLat && worker.currentLng) {
+            const distance = calculateHaversineDistance(
+              { lat, lng },
+              { lat: worker.currentLat, lng: worker.currentLng }
+            );
+            if (distance <= radiusInKm) {
+              results.push({
+                workerId: worker.userId,
+                distance,
+              });
+            }
+          }
+        }
+        return results.sort((a, b) => a.distance - b.distance);
+      }
+
       const geoKey = `active_workers:${cityId}`;
 
       // Run Redis GEOSEARCH query

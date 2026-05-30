@@ -10,22 +10,32 @@ const PORT = process.env.PORT || 4000;
 
 async function bootstrap() {
   try {
-    // 1. Create HTTP server wrapping Express app
+    // 1. Verify Redis connection first (made optional for offline/Supabase setups)
+    let useRedis = false;
+    try {
+      await Promise.race([
+        redis.ping(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Redis connection timeout")), 1500))
+      ]);
+      logger.info("Redis cache service validated successfully");
+      useRedis = true;
+    } catch (redisError) {
+      logger.warn("Redis is offline. Operating in REDIS_OFFLINE mode. Server will still run, but caching/tracking is limited.");
+      redis.disconnect();
+    }
+
+    // 2. Create HTTP server wrapping Express app
     const httpServer = createServer(app);
 
-    // 2. Initialize WebSocket manager with Socket.IO & Redis Adapter
-    socketManager.init(httpServer);
+    // 3. Initialize WebSocket manager with Socket.IO & Redis Adapter (if online)
+    socketManager.init(httpServer, useRedis);
 
-    // 3. Verify Database connection
+    // 4. Verify Database connection
     await prisma.$connect();
     logger.info("Database connection validated successfully via Prisma ORM");
 
-    // 4. Verify Redis connection
-    await redis.ping();
-    logger.info("Redis cache service validated successfully");
-
-    // 5. Start listening
-    httpServer.listen(PORT, () => {
+    // 5. Start listening (bind explicitly to 0.0.0.0 for maximum compatibility on IPv4/IPv6 localhost)
+    httpServer.listen(Number(PORT), "0.0.0.0", () => {
       logger.info(`NearPro API Server is running on http://localhost:${PORT}`);
       logger.info(`WebSocket endpoint active on ws://localhost:${PORT}`);
     });

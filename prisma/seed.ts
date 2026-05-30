@@ -48,17 +48,17 @@ async function main() {
     console.log("⚠️ Redis is offline. Skipping Redis cleanup.");
   }
 
-  // 2. Create operating city (Bengaluru) with PostGIS polygon boundary
-  console.log("🌆 Seeding Operating City: Bengaluru...");
-  const cityId = "bengaluru-city-uuid-10001";
-  const cityName = "Bengaluru";
-  const state = "Karnataka";
+  // 2. Create operating city (Gorakhpur) with PostGIS polygon boundary
+  console.log("🌆 Seeding Operating City: Gorakhpur...");
+  const cityId = "gorakhpur-city-uuid-10001";
+  const cityName = "Gorakhpur";
+  const state = "Uttar Pradesh";
   const country = "India";
-  const lat = 12.9716;
-  const lng = 77.5946;
+  const lat = 26.7606;
+  const lng = 83.3731;
   
-  // Simple polygon bounding central Bangalore (West, North, East, South)
-  const boundaryWKT = "POLYGON((77.50 12.90, 77.50 13.05, 77.70 13.05, 77.70 12.90, 77.50 12.90))";
+  // Simple polygon bounding central Gorakhpur (West, North, East, South)
+  const boundaryWKT = "POLYGON((83.25 26.65, 83.25 26.85, 83.50 26.85, 83.50 26.65, 83.25 26.65))";
   
   await prisma.$executeRawUnsafe(`
     INSERT INTO "City" ("id", "name", "state", "country", "lat", "lng", "boundary", "isActive", "createdAt", "updatedAt")
@@ -165,7 +165,7 @@ async function main() {
       },
     });
 
-    // Pricing for Bengaluru city
+    // Pricing for Gorakhpur city
     await prisma.cityServicePricing.create({
       data: {
         cityId,
@@ -202,7 +202,7 @@ async function main() {
     },
   });
 
-  // Workers with coordinates located inside Bengaluru operational polygon
+  // Workers with coordinates located inside Gorakhpur operational polygon
   const workersData = [
     {
       email: "priya@nearpro.com",
@@ -210,8 +210,8 @@ async function main() {
       firstName: "Priya",
       lastName: "Das",
       category: dishwashingCat,
-      lat: 12.9716, // Indiranagar central
-      lng: 77.5946,
+      lat: 26.7593, // Golghar central
+      lng: 83.3705,
       avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
     },
     {
@@ -220,8 +220,8 @@ async function main() {
       firstName: "Sunita",
       lastName: "Patil",
       category: kitchenCat,
-      lat: 12.9304, // HSR Layout Sector 6
-      lng: 77.6784,
+      lat: 26.7820, // Shahpur
+      lng: 83.3640,
       avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200",
     },
     {
@@ -230,8 +230,8 @@ async function main() {
       firstName: "Rani",
       lastName: "Devi",
       category: laundryCat,
-      lat: 12.9279, // Koramangala 4th Block
-      lng: 77.6271,
+      lat: 26.7450, // Betiahata
+      lng: 83.3712,
       avatar: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&q=80&w=200",
     },
   ];

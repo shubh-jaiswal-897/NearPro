@@ -25,7 +25,7 @@ export default function BookingFlow({
   const [instructions, setInstructions] = useState("");
   const [flatNumber, setFlatNumber] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
-  const [lat, setLat] = useState(12.9716); // Default Bengaluru
+  const [lat, setLat] = useState(12.9716); // Default Gorakhpur
   const [lng, setLng] = useState(77.5946);
   const [paymentMethod, setPaymentMethod] = useState<"UPI" | "CARD" | "CASH" | "WALLET">("UPI");
   const [loading, setLoading] = useState(false);
@@ -143,7 +143,7 @@ export default function BookingFlow({
       serviceId: currentPricing.serviceId,
       pickupLat: lat,
       pickupLng: lng,
-      pickupAddress: `${flatNumber}, ${streetAddress}, Bengaluru`,
+      pickupAddress: `${flatNumber}, ${streetAddress}, Gorakhpur`,
       totalPrice,
       platformCut: platformFee,
       workerCut: serviceCharge - platformFee,

@@ -1,15 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import { Role } from "@prisma/client";
 import logger from "../utils/logger";
-
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-change-in-production-123456";
-
-interface JwtPayload {
-  id: string;
-  email: string;
-  role: Role;
-}
+import supabase from "../config/supabase";
 
 export const authenticate = async (
   req: Request,
@@ -35,16 +27,30 @@ export const authenticate = async (
       return;
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    // Validate the Supabase JWT — this also handles expiry automatically
+    const { data, error } = await supabase.auth.getUser(token);
+
+    if (error || !data.user) {
+      logger.warn("Supabase token validation failed:", error?.message);
+      res.status(401).json({
+        status: "error",
+        message: "Authorization token is expired or invalid",
+      });
+      return;
+    }
+
+    const supabaseUser = data.user;
+    const metadata = supabaseUser.user_metadata ?? {};
+
     req.user = {
-      id: decoded.id,
-      email: decoded.email,
-      role: decoded.role,
+      id: supabaseUser.id,
+      email: supabaseUser.email ?? "",
+      role: (metadata.role as Role) ?? Role.CUSTOMER,
     };
 
     next();
   } catch (error) {
-    logger.warn("JWT Verification failed:", error);
+    logger.warn("Authentication error:", error);
     res.status(401).json({
       status: "error",
       message: "Authorization token is expired or invalid",

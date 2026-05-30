@@ -22,7 +22,7 @@ export interface AuthenticatedSocket extends Socket {
 class SocketManager {
   private io: Server | null = null;
 
-  init(server: HttpServer) {
+  init(server: HttpServer, useRedis: boolean = false) {
     this.io = new Server(server, {
       cors: {
         origin: "*",
@@ -32,12 +32,27 @@ class SocketManager {
       pingInterval: 10000,
     });
 
-    // Configure horizontal scalability adapter using Redis Pub/Sub client duplicates
-    const pubClient = redis.duplicate();
-    const subClient = redis.duplicate();
-    this.io.adapter(createAdapter(pubClient, subClient));
+    if (useRedis) {
+      try {
+        // Configure horizontal scalability adapter using Redis Pub/Sub client duplicates
+        const pubClient = redis.duplicate();
+        const subClient = redis.duplicate();
+        
+        pubClient.on("error", (err) => {
+          logger.error("Redis pubClient error:", err);
+        });
+        subClient.on("error", (err) => {
+          logger.error("Redis subClient error:", err);
+        });
 
-    logger.info("Socket.IO Redis Adapter configured successfully");
+        this.io.adapter(createAdapter(pubClient, subClient));
+        logger.info("Socket.IO Redis Adapter configured successfully");
+      } catch (err) {
+        logger.error("Failed to initialize Socket.IO Redis adapter:", err);
+      }
+    } else {
+      logger.info("Operating in REDIS_OFFLINE mode. Socket.IO using default In-Memory adapter.");
+    }
 
     // JWT Authentication middleware for WebSocket handshakes
     this.io.use((socket: Socket, next) => {

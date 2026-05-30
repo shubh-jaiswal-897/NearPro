@@ -19,4 +19,10 @@ router.get(
   WorkerController.getStats
 );
 
+// Admin APIs (Temporarily exposed without JWT auth for local Admin App)
+router.get("/admin/pending", WorkerController.listPending);
+router.get("/admin/all", WorkerController.listAll);
+router.patch("/admin/:id/approve", WorkerController.approve);
+router.delete("/admin/:id/reject", WorkerController.reject);
+
 export default router;

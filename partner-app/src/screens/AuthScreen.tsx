@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import * as SecureStore from "../utils/secureStore";
 import api from "../services/api";
+import { Ionicons } from "@expo/vector-icons";
 import Theme from "../components/Theme";
 
 interface AuthScreenProps {
@@ -23,9 +24,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [aadhaarNumber, setAadhaarNumber] = useState("");
   
   // Selection States
   const [cities, setCities] = useState<any[]>([]);
@@ -77,6 +80,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
             firstName,
             lastName,
             phoneNumber,
+            aadhaarNumber,
             role: "WORKER",
             cityId: selectedCityId,
             serviceCategoryId: selectedCategoryId,
@@ -84,6 +88,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 
       const response = await api.post(endpoint, payload);
       const { token, user } = response.data.data;
+
+      if (!isLogin) {
+        Alert.alert("Success", "Registration successful! Your application is pending admin approval.");
+        setIsLogin(true);
+        setLoading(false);
+        return;
+      }
 
       // Verify that user logged in is a worker
       if (user.role !== "WORKER") {
@@ -138,14 +149,25 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           )}
 
           {!isLogin && (
-            <TextInput
-              style={styles.input}
-              placeholder="Phone Number"
-              placeholderTextColor={Theme.colors.textMuted}
-              keyboardType="phone-pad"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-            />
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Phone Number"
+                placeholderTextColor={Theme.colors.textMuted}
+                keyboardType="phone-pad"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Aadhar No"
+                placeholderTextColor={Theme.colors.textMuted}
+                keyboardType="number-pad"
+                maxLength={12}
+                value={aadhaarNumber}
+                onChangeText={setAadhaarNumber}
+              />
+            </>
           )}
 
           {/* Select City and Skill Category if Registering */}
@@ -195,14 +217,26 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
             onChangeText={setEmail}
           />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor={Theme.colors.textMuted}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Password"
+              placeholderTextColor={Theme.colors.textMuted}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity 
+              style={styles.eyeIcon} 
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Ionicons 
+                name={showPassword ? "eye-off" : "eye"} 
+                size={20} 
+                color={Theme.colors.textMuted} 
+              />
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={styles.button}
@@ -276,6 +310,26 @@ const styles = StyleSheet.create({
     paddingVertical: Theme.spacing.sm,
     marginBottom: Theme.spacing.md,
     fontSize: 15,
+  },
+  passwordContainer: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Theme.colors.surface,
+    borderColor: Theme.colors.border,
+    borderWidth: 1,
+    borderRadius: Theme.borderRadius.md,
+    marginBottom: Theme.spacing.md,
+  },
+  passwordInput: {
+    flex: 1,
+    color: Theme.colors.text,
+    paddingHorizontal: Theme.spacing.md,
+    paddingVertical: Theme.spacing.sm,
+    fontSize: 15,
+  },
+  eyeIcon: {
+    padding: 10,
   },
   halfInput: {
     width: "48%",

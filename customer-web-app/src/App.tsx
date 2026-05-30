@@ -3,7 +3,7 @@ import LandingPage from "./components/LandingPage";
 import BookingFlow from "./components/BookingFlow";
 import TrackingView from "./components/TrackingView";
 import AuthModal from "./components/AuthModal";
-import { ServiceCategory } from "./types";
+import type { ServiceCategory } from "./types";
 import "./App.css";
 
 type Screen = "HOME" | "BOOKING" | "TRACKING";

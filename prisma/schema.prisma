@@ -62,7 +62,7 @@ model User {
   id               String           @id @default(uuid())
   email            String           @unique
   phoneNumber      String           @unique
-  passwordHash     String
+  passwordHash     String?  // Managed by Supabase Auth; kept for legacy compatibility
   firstName        String
   lastName         String
   role             Role             @default(CUSTOMER)
@@ -107,6 +107,7 @@ model WorkerProfile {
   location          Unsupported("geography(Point, 4326)")?
   
   verificationDocUrl String?
+  aadhaarNumber     String?  // 12-digit Aadhaar card number
   isVerified        Boolean                @default(false)
   totalEarnings     Decimal                @default(0.00) @db.Decimal(10, 2)
   

@@ -1,6 +1,7 @@
 import prisma from "../../config/database";
 import TrackingService from "../tracking/tracking.service";
 import { WorkerStatus } from "@prisma/client";
+import supabase from "../../config/supabase";
 
 export class WorkerService {
   /**
@@ -25,15 +26,11 @@ export class WorkerService {
       },
       include: {
         user: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
+          select: { firstName: true, lastName: true },
         },
       },
     });
 
-    // Clean up Redis active index if worker goes offline
     if (!isOnline) {
       await TrackingService.removeWorker(userId);
     }
@@ -48,17 +45,8 @@ export class WorkerService {
     const worker = await prisma.workerProfile.findUnique({
       where: { userId },
       include: {
-        earningsLogs: {
-          orderBy: { createdAt: "desc" },
-          take: 10, // Get last 10 logs
-        },
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            rating: true,
-          },
-        },
+        earningsLogs: { orderBy: { createdAt: "desc" }, take: 10 },
+        user: { select: { firstName: true, lastName: true, rating: true } },
       },
     });
 
@@ -83,6 +71,83 @@ export class WorkerService {
         createdAt: log.createdAt,
       })),
     };
+  }
+
+  /**
+   * ADMIN: Get all pending (unverified) worker registrations
+   */
+  static async listPendingWorkers() {
+    return prisma.workerProfile.findMany({
+      where: { isVerified: false },
+      include: {
+        user: {
+          select: { id: true, firstName: true, lastName: true, email: true, phoneNumber: true, createdAt: true },
+        },
+        city: { select: { name: true } },
+        serviceCategory: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  /**
+   * ADMIN: Get all workers (verified + unverified)
+   */
+  static async listAllWorkers() {
+    return prisma.workerProfile.findMany({
+      include: {
+        user: {
+          select: { id: true, firstName: true, lastName: true, email: true, phoneNumber: true, createdAt: true },
+        },
+        city: { select: { name: true } },
+        serviceCategory: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  /**
+   * ADMIN: Approve a worker — set isVerified = true
+   */
+  static async approveWorker(workerId: string) {
+    const worker = await prisma.workerProfile.findUnique({ where: { id: workerId } });
+    if (!worker) {
+      const error: any = new Error("Worker not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return prisma.workerProfile.update({
+      where: { id: workerId },
+      data: { isVerified: true },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true } },
+      },
+    });
+  }
+
+  /**
+   * ADMIN: Reject & delete worker registration
+   */
+  static async rejectWorker(workerId: string) {
+    const worker = await prisma.workerProfile.findUnique({
+      where: { id: workerId },
+      include: { user: true },
+    });
+
+    if (!worker) {
+      const error: any = new Error("Worker not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Delete from local DB (cascade removes WorkerProfile)
+    await prisma.user.delete({ where: { id: worker.userId } });
+
+    // Also remove from Supabase Auth
+    await supabase.auth.admin.deleteUser(worker.userId);
+
+    return { message: "Worker registration rejected and account removed" };
   }
 }
 
