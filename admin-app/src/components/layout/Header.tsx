@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Bell, Menu } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAdmin } from '../../context/AdminContext';
 
 interface HeaderProps {
   setIsMobileMenuOpen: (val: boolean) => void;
@@ -8,6 +9,27 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ setIsMobileMenuOpen }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { workers } = useAdmin();
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const pendingWorkers = workers.filter(w => w.status === 'Pending').length;
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchTerm) {
+      alert(`Global search is in development. You searched for: ${searchTerm}`);
+      setSearchTerm('');
+    }
+  };
+
+  const handleNotificationClick = () => {
+    if (pendingWorkers > 0) {
+      alert(`You have ${pendingWorkers} pending worker verification(s). Redirecting to workers directory.`);
+      navigate('/workers');
+    } else {
+      alert('No new notifications.');
+    }
+  };
   
   const getPageTitle = () => {
     switch (location.pathname) {
@@ -52,7 +74,10 @@ export const Header: React.FC<HeaderProps> = ({ setIsMobileMenuOpen }) => {
           <div style={{ position: 'relative' }}>
             <input 
               type="text" 
-              placeholder="Search..." 
+              placeholder="Search (Press Enter)..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleSearch}
               style={{
                 background: 'rgba(255,255,255,0.05)',
                 border: '1px solid var(--glass-border)',
@@ -64,8 +89,31 @@ export const Header: React.FC<HeaderProps> = ({ setIsMobileMenuOpen }) => {
             />
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--text-muted)' }} />
           </div>
-          <button className="btn btn-glass" style={{ padding: '8px', borderRadius: '50%' }}>
+          <button 
+            className="btn btn-glass" 
+            style={{ padding: '8px', borderRadius: '50%', position: 'relative' }}
+            onClick={handleNotificationClick}
+          >
             <Bell size={20} />
+            {pendingWorkers > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '0',
+                right: '0',
+                background: 'var(--danger)',
+                color: 'white',
+                fontSize: '10px',
+                width: '14px',
+                height: '14px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold'
+              }}>
+                {pendingWorkers}
+              </span>
+            )}
           </button>
           <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
             A

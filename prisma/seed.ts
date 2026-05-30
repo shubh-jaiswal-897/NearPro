@@ -18,9 +18,9 @@ async function main() {
   await prisma.booking.deleteMany({});
   await prisma.cityServicePricing.deleteMany({});
   await prisma.service.deleteMany({});
-  await prisma.serviceCategory.deleteMany({});
   await prisma.workerProfile.deleteMany({});
   await prisma.customerProfile.deleteMany({});
+  await prisma.serviceCategory.deleteMany({});
   await prisma.user.deleteMany({});
   
   // Clean raw city table (must delete via queryRaw due to PostGIS polygons)

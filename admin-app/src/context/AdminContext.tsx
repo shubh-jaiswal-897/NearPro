@@ -147,4 +147,17 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AdminContext.Provider value={{
       bookings, workers, services, stats,
-      updateBookingStatus, updateWorkerStatus, addWorker, addSer
+      updateBookingStatus, updateWorkerStatus, addWorker, addService, deleteService, toggleServiceStatus
+    }}>
+      {children}
+    </AdminContext.Provider>
+  );
+};
+
+export const useAdmin = () => {
+  const context = useContext(AdminContext);
+  if (context === undefined) {
+    throw new Error('useAdmin must be used within an AdminProvider');
+  }
+  return context;
+};
