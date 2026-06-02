@@ -7,6 +7,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Bookings } from './pages/Bookings';
 import { Workers } from './pages/Workers';
 import { Services } from './pages/Services';
+import { Users } from './pages/Users';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -104,6 +105,7 @@ function App() {
             <Route path="bookings" element={<Bookings />} />
             <Route path="workers" element={<Workers />} />
             <Route path="services" element={<Services />} />
+            <Route path="users" element={<Users />} />
           </Route>
         </Routes>
       </BrowserRouter>

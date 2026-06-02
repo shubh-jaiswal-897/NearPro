@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { Role } from "@prisma/client";
+import jwt from "jsonwebtoken";
 import logger from "../utils/logger";
 import supabase from "../config/supabase";
+
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-change-in-production-123456";
 
 export const authenticate = async (
   req: Request,
@@ -27,7 +30,24 @@ export const authenticate = async (
       return;
     }
 
-    // Validate the Supabase JWT — this also handles expiry automatically
+    // 1. Try to verify as a local JWT first (for local mock/dev or custom auth)
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as {
+        id: string;
+        email: string;
+        role: Role;
+      };
+      req.user = {
+        id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
+      };
+      return next();
+    } catch (localJwtError) {
+      // If it's not a valid local JWT, fall back to Supabase
+    }
+
+    // 2. Validate the Supabase JWT — this also handles expiry automatically
     const { data, error } = await supabase.auth.getUser(token);
 
     if (error || !data.user) {

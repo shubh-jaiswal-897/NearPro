@@ -129,6 +129,129 @@ export class ServiceCatalogService {
       platformFee: Number(pricing.platformFee),
     };
   }
+
+  /**
+   * ADMIN: List all categories (active + inactive)
+   */
+  static async listAllCategories() {
+    return prisma.serviceCategory.findMany({
+      orderBy: { name: "asc" },
+    });
+  }
+
+  /**
+   * ADMIN: List all services across all categories with pricing
+   */
+  static async listAllServices() {
+    const services = await prisma.service.findMany({
+      include: {
+        category: true,
+        pricings: true,
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return services.map((s) => {
+      const pricing = s.pricings?.[0] || null;
+      return {
+        id: s.id,
+        categoryId: s.categoryId,
+        category: s.category.name,
+        name: s.name,
+        description: s.description,
+        priceType: s.priceType,
+        active: s.isActive,
+        basePrice: pricing ? Number(pricing.basePrice) : 0,
+      };
+    });
+  }
+
+  /**
+   * ADMIN: Create new service and configure default city pricing
+   */
+  static async createServiceAdmin(data: {
+    name: string;
+    categoryId: string;
+    basePrice: number;
+    description?: string;
+  }) {
+    const { name, categoryId, basePrice, description } = data;
+
+    // Find the first operational city to seed price rules
+    const city = await prisma.city.findFirst({
+      where: { isActive: true },
+    });
+
+    if (!city) {
+      throw new Error("No active cities configured. Please configure an operational city first.");
+    }
+
+    const service = await prisma.service.create({
+      data: {
+        categoryId,
+        name,
+        description: description || "",
+        priceType: "HOURLY",
+        isActive: true,
+      },
+    });
+
+    // Create pricing for that city
+    await prisma.cityServicePricing.create({
+      data: {
+        cityId: city.id,
+        serviceId: service.id,
+        basePrice,
+        pricePerKm: 10.0,
+        pricePerMinute: 2.0,
+        minimumPrice: basePrice,
+        platformFee: 15.0, // Default platform commission
+      },
+    });
+
+    return service;
+  }
+
+  /**
+   * ADMIN: Toggle service active/inactive status
+   */
+  static async toggleServiceActive(serviceId: string) {
+    const service = await prisma.service.findUnique({ where: { id: serviceId } });
+    if (!service) {
+      throw new Error("Service not found");
+    }
+
+    return prisma.service.update({
+      where: { id: serviceId },
+      data: { isActive: !service.isActive },
+    });
+  }
+
+  /**
+   * ADMIN: Delete service (deactivates if bookings exist)
+   */
+  static async deleteServiceAdmin(serviceId: string) {
+    const service = await prisma.service.findUnique({ where: { id: serviceId } });
+    if (!service) {
+      throw new Error("Service not found");
+    }
+
+    // Check for existing bookings
+    const bookingsCount = await prisma.booking.count({ where: { serviceId } });
+    if (bookingsCount > 0) {
+      // Soft-disable instead
+      await prisma.service.update({
+        where: { id: serviceId },
+        data: { isActive: false },
+      });
+      return { message: "Service has historical bookings. Deactivated instead of deleted.", deactivated: true };
+    }
+
+    // Direct deletion
+    await prisma.cityServicePricing.deleteMany({ where: { serviceId } });
+    await prisma.service.delete({ where: { id: serviceId } });
+    return { message: "Service deleted successfully", deactivated: false };
+  }
 }
 
 export default ServiceCatalogService;

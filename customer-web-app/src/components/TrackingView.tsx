@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Clock, Phone, ShieldAlert, Award, Star, Compass, CheckCircle2, ArrowRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Clock, Phone, Award, Star, Compass, CheckCircle2, ArrowRight } from "lucide-react";
 import L from "leaflet";
 import io from "socket.io-client";
 import "./TrackingView.css";

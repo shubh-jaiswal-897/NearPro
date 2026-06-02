@@ -31,7 +31,9 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
   onBack,
 }) => {
   const [address, setAddress] = useState("");
+  const [durationHours, setDurationHours] = useState(1);
   const [loading, setLoading] = useState(false);
+  const hourlyRate = 199; // Mock Snabbit Hourly Rate
 
   const handleBookingSubmit = async () => {
     if (!address || address.trim().length < 5) {
@@ -47,6 +49,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
         pickupLat: location.latitude,
         pickupLng: location.longitude,
         pickupAddress: address,
+        durationHours,
       };
 
       const response = await api.post("/bookings", payload);
@@ -108,15 +111,36 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
             </Text>
           </View>
 
+          <View style={styles.hourlyContainer}>
+            <Text style={styles.label}>Select Duration (Hours)</Text>
+            <View style={styles.durationRow}>
+              {[1, 2, 3, 4, 5].map((hours) => (
+                <TouchableOpacity
+                  key={hours}
+                  style={[styles.durationChip, durationHours === hours && styles.durationChipSelected]}
+                  onPress={() => setDurationHours(hours)}
+                >
+                  <Text style={[styles.durationText, durationHours === hours && styles.durationTextSelected]}>
+                    {hours} {hours === 1 ? "Hr" : "Hrs"}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.priceSummary}>
+              <Text style={styles.priceLabel}>Estimated Total:</Text>
+              <Text style={styles.priceValue}>₹{durationHours * hourlyRate}</Text>
+            </View>
+          </View>
+
           <TouchableOpacity
             style={[styles.bookBtn, loading && styles.disabledBtn]}
             onPress={handleBookingSubmit}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color={Theme.colors.text} />
+              <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.bookText}>Book 10-Minute Dispatch</Text>
+              <Text style={styles.bookText}>Book Partner for ₹{durationHours * hourlyRate}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -219,13 +243,65 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.md,
     paddingVertical: Theme.spacing.md,
     alignItems: "center",
+    marginTop: Theme.spacing.md,
   },
   disabledBtn: {
     backgroundColor: Theme.colors.border,
   },
   bookText: {
-    color: Theme.colors.text,
+    color: "#fff",
     fontSize: 16,
+    fontWeight: "bold",
+  },
+  hourlyContainer: {
+    marginBottom: Theme.spacing.lg,
+  },
+  durationRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: Theme.spacing.sm,
+    marginBottom: Theme.spacing.md,
+  },
+  durationChip: {
+    flex: 1,
+    marginHorizontal: 4,
+    paddingVertical: 10,
+    backgroundColor: Theme.colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    borderRadius: Theme.borderRadius.md,
+    alignItems: "center",
+  },
+  durationChipSelected: {
+    backgroundColor: Theme.colors.primary,
+    borderColor: Theme.colors.primary,
+  },
+  durationText: {
+    color: Theme.colors.text,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  durationTextSelected: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  priceSummary: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "rgba(16, 185, 129, 0.05)",
+    padding: Theme.spacing.md,
+    borderRadius: Theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.2)",
+  },
+  priceLabel: {
+    color: Theme.colors.textMuted,
+    fontSize: 15,
+  },
+  priceValue: {
+    color: Theme.colors.success,
+    fontSize: 22,
     fontWeight: "bold",
   },
 });

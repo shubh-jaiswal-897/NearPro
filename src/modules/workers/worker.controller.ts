@@ -81,6 +81,23 @@ export class WorkerController {
   }
 
   /**
+   * ADMIN: PATCH /api/workers/admin/:id/suspend
+   */
+  static async suspend(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const worker = await WorkerService.suspendWorker(id);
+      res.status(200).json({
+        status: "success",
+        message: "Worker suspended successfully",
+        data: { worker },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * ADMIN: DELETE /api/workers/:id/reject
    */
   static async reject(req: Request, res: Response, next: NextFunction): Promise<void> {

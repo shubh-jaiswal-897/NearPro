@@ -37,4 +37,12 @@ router.post(
   ServiceCatalogController.setPricing
 );
 
+// Admin APIs (Temporarily exposed without JWT auth for local Admin App)
+router.get("/admin/categories", ServiceCatalogController.listAllCategories);
+router.post("/admin/categories", ServiceCatalogController.createCategoryAdmin);
+router.get("/admin/all", ServiceCatalogController.listAllServices);
+router.post("/admin/services", ServiceCatalogController.createServiceAdmin);
+router.patch("/admin/services/:id/toggle", ServiceCatalogController.toggleServiceActive);
+router.delete("/admin/services/:id", ServiceCatalogController.deleteServiceAdmin);
+
 export default router;

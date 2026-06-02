@@ -97,7 +97,7 @@ export class WorkerService {
     return prisma.workerProfile.findMany({
       include: {
         user: {
-          select: { id: true, firstName: true, lastName: true, email: true, phoneNumber: true, createdAt: true },
+          select: { id: true, firstName: true, lastName: true, email: true, phoneNumber: true, isActive: true, createdAt: true },
         },
         city: { select: { name: true } },
         serviceCategory: { select: { name: true } },
@@ -117,13 +117,58 @@ export class WorkerService {
       throw error;
     }
 
+    // Reactivate user if they were suspended
+    await prisma.user.update({
+      where: { id: worker.userId },
+      data: { isActive: true }
+    });
+
     return prisma.workerProfile.update({
       where: { id: workerId },
       data: { isVerified: true },
       include: {
-        user: { select: { firstName: true, lastName: true, email: true } },
+        user: { select: { firstName: true, lastName: true, email: true, isActive: true } },
       },
     });
+  }
+
+  /**
+   * ADMIN: Suspend a worker — set user.isActive = false, status = OFFLINE
+   */
+  static async suspendWorker(workerId: string) {
+    const worker = await prisma.workerProfile.findUnique({ where: { id: workerId } });
+    if (!worker) {
+      const error: any = new Error("Worker not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Set user to inactive
+    await prisma.user.update({
+      where: { id: worker.userId },
+      data: { isActive: false }
+    });
+
+    // Update worker status and go offline
+    const updatedWorker = await prisma.workerProfile.update({
+      where: { id: workerId },
+      data: {
+        isOnline: false,
+        status: WorkerStatus.OFFLINE,
+      },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true, isActive: true } }
+      }
+    });
+
+    // Remove from Redis active workers geo set
+    try {
+      await TrackingService.removeWorker(worker.userId);
+    } catch (err) {
+      console.error("Failed to remove suspended worker from Redis active list:", err);
+    }
+
+    return updatedWorker;
   }
 
   /**
@@ -145,7 +190,14 @@ export class WorkerService {
     await prisma.user.delete({ where: { id: worker.userId } });
 
     // Also remove from Supabase Auth
-    await supabase.auth.admin.deleteUser(worker.userId);
+    try {
+      const isMockAuth = process.env.SUPABASE_SERVICE_ROLE_KEY === "your-service-role-key-here" || !process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!isMockAuth) {
+        await supabase.auth.admin.deleteUser(worker.userId);
+      }
+    } catch (err) {
+      console.error(`Failed to delete worker ${worker.userId} from Supabase Auth:`, err);
+    }
 
     return { message: "Worker registration rejected and account removed" };
   }

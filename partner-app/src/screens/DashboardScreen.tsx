@@ -5,15 +5,17 @@ import {
   View,
   Switch,
   TouchableOpacity,
-  Modal,
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  Dimensions,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as SecureStore from "../utils/secureStore";
 import socketService from "../services/socket";
 import api from "../services/api";
-import { getCurrentLocation } from "../utils/location"; // local location helper
+import { getCurrentLocation } from "../utils/location";
 import Theme from "../components/Theme";
 
 interface DashboardScreenProps {
@@ -21,6 +23,8 @@ interface DashboardScreenProps {
   onNavigateToEarnings: () => void;
   onLogout: () => void;
 }
+
+const { width } = Dimensions.get("window");
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onAssignJob,
@@ -69,6 +73,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       } else {
         stopTracking();
         socketService.disconnect();
+        setCurrentJob(null);
       }
     } catch (e) {
       console.error("Failed to toggle online presence status:", e);
@@ -151,6 +156,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     try {
       const bookingId = currentJob.bookingId;
       
+      // If it's the mock demo job, bypass api
+      if (bookingId === "mock-booking-id") {
+        setCurrentJob(null);
+        onAssignJob(bookingId);
+        return;
+      }
+
       // Call accept API
       await api.post("/bookings/accept", { bookingId });
       
@@ -171,90 +183,146 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     setCurrentJob(null);
   };
 
+  // Helper to trigger a simulation job for testing
+  const triggerMockJob = () => {
+    triggerJobAlert({
+      bookingId: "mock-booking-id",
+      serviceName: "Home Electrical Wiring Repair",
+      pickupAddress: "Flat 402, Royal Palms, Sector 62",
+      estimatedDistance: 3.4,
+      etaMinutes: 10,
+      payoutAmount: 1250,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeContainer}>
+      {/* Header Area */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>NearPro Partner Dashboard</Text>
+        <View style={styles.userInfo}>
+          <View style={styles.avatarContainer}>
+            <Ionicons name="person" size={20} color={Theme.colors.primary} />
+            <View style={[styles.statusDot, { backgroundColor: isOnline ? Theme.colors.success : Theme.colors.textMuted }]} />
+          </View>
+          <View style={styles.userMeta}>
+            <Text style={styles.userName}>Partner Portal</Text>
+            <Text style={styles.userRole}>Verified Expert</Text>
+          </View>
+        </View>
+
         <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
+          <Ionicons name="log-out-outline" size={22} color={Theme.colors.textMuted} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.container}>
-        {/* Giant Status card */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Prominent Online/Offline Toggle Switch */}
         <View style={[styles.statusCard, isOnline && styles.onlineCard]}>
-          <Text style={styles.statusLabel}>
-            {isOnline ? "YOU ARE ONLINE & ACTIVE 🟢" : "YOU ARE OFFLINE 🔴"}
-          </Text>
-          <Text style={styles.statusDesc}>
-            {isOnline
-              ? "You will receive nearby service requests within 3-5 km. Keep this screen active."
-              : "Turn on the toggle switch to begin receiving hyperlocal jobs in your city."}
-          </Text>
-
-          {loading ? (
-            <ActivityIndicator color={Theme.colors.text} style={{ marginVertical: 10 }} />
-          ) : (
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>Go Online</Text>
+          <View style={styles.switchRow}>
+            <View>
+              <Text style={styles.statusLabel}>
+                {isOnline ? "You are Online" : "You are Offline"}
+              </Text>
+              <Text style={styles.statusDesc}>
+                {isOnline ? "Waiting for nearby service requests..." : "Go online to start receiving work order alerts"}
+              </Text>
+            </View>
+            {loading ? (
+              <ActivityIndicator color={Theme.colors.primary} size="small" />
+            ) : (
               <Switch
                 value={isOnline}
                 onValueChange={handleToggleOnline}
-                trackColor={{ false: "#767577", true: Theme.colors.success }}
-                thumbColor={isOnline ? Theme.colors.text : "#f4f3f4"}
+                trackColor={{ false: "#1e293b", true: "rgba(16, 185, 129, 0.25)" }}
+                thumbColor={isOnline ? Theme.colors.primary : "#475569"}
               />
-            </View>
-          )}
+            )}
+          </View>
         </View>
 
-        {/* Dashboard quick links */}
-        <TouchableOpacity style={styles.menuLink} onPress={onNavigateToEarnings}>
-          <Text style={styles.menuLinkText}>📊 Earning Statistics & Ledger</Text>
+        {/* Today's Earnings Card */}
+        <TouchableOpacity style={styles.earningsCard} onPress={onNavigateToEarnings}>
+          <View style={styles.earningsHeader}>
+            <Text style={styles.earningsTitle}>TODAY'S EARNINGS</Text>
+            <Ionicons name="trending-up" size={18} color={Theme.colors.primary} />
+          </View>
+          <Text style={styles.earningsAmount}>₹1,250</Text>
+          <View style={styles.earningsFooter}>
+            <Text style={styles.earningsSub}>Completed: 3 Jobs</Text>
+            <Text style={styles.earningsLinkText}>View Ledger <Ionicons name="arrow-forward" size={12} /></Text>
+          </View>
         </TouchableOpacity>
 
-        {/* Active Job Alert Overlay sheet (Modal) */}
+        {/* Demo trigger helper for testing */}
+        {!currentJob && (
+          <TouchableOpacity style={styles.demoTrigger} onPress={triggerMockJob}>
+            <Ionicons name="flash-outline" size={16} color={Theme.colors.textMuted} style={{ marginRight: 6 }} />
+            <Text style={styles.demoTriggerText}>Simulate Incoming Job Alert</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Incoming Job Request Card */}
         {currentJob && (
-          <Modal transparent visible={!!currentJob} animationType="slide">
-            <View style={styles.modalBg}>
-              <View style={styles.alertCard}>
-                <Text style={styles.alertHeader}>🛠️ NEW HYPERLOCAL JOB BROADCAST</Text>
-                
-                <View style={styles.timerBadge}>
-                  <Text style={styles.timerText}>Accept within: {countdown}s</Text>
-                </View>
-
-                <Text style={styles.jobName}>{currentJob.serviceName}</Text>
-                <Text style={styles.jobAddr}>📍 Address: {currentJob.pickupAddress}</Text>
-
-                <View style={styles.statsRow}>
-                  <View style={styles.statBox}>
-                    <Text style={styles.statLabel}>Distance</Text>
-                    <Text style={styles.statVal}>{currentJob.estimatedDistance} km</Text>
-                  </View>
-                  <View style={styles.statBox}>
-                    <Text style={styles.statLabel}>Est. Travel</Text>
-                    <Text style={styles.statVal}>{currentJob.etaMinutes} mins</Text>
-                  </View>
-                  <View style={styles.statBox}>
-                    <Text style={styles.statLabel}>Payout</Text>
-                    <Text style={[styles.statVal, { color: Theme.colors.success }]}>
-                      ${currentJob.payoutAmount.toFixed(2)}
-                    </Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity style={styles.acceptBtn} onPress={handleAcceptJob}>
-                  <Text style={styles.acceptBtnText}>ACCEPT WORK ORDER</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.declineBtn} onPress={handleDeclineJob}>
-                  <Text style={styles.declineText}>DECLINE</Text>
-                </TouchableOpacity>
+          <View style={styles.incomingJobCard}>
+            <View style={styles.incomingJobHeader}>
+              <View style={styles.alertIndicator}>
+                <View style={styles.pulseDot} />
+                <Text style={styles.alertTitle}>INCOMING JOB REQUEST</Text>
+              </View>
+              <View style={styles.timerBadge}>
+                <Ionicons name="time-outline" size={13} color={Theme.colors.danger} style={{ marginRight: 4 }} />
+                <Text style={styles.timerText}>{countdown}s</Text>
               </View>
             </View>
-          </Modal>
+
+            <Text style={styles.taskDescription}>{currentJob.serviceName}</Text>
+            
+            <View style={styles.jobDetailsGrid}>
+              <View style={styles.jobDetailItem}>
+                <Ionicons name="location-outline" size={16} color={Theme.colors.primary} />
+                <Text style={styles.jobDetailText}>{currentJob.pickupAddress}</Text>
+              </View>
+              <View style={styles.jobDetailItem}>
+                <Ionicons name="navigate-outline" size={16} color={Theme.colors.primary} />
+                <Text style={styles.jobDetailText}>{currentJob.estimatedDistance} km away</Text>
+              </View>
+            </View>
+
+            <View style={styles.payoutRow}>
+              <Text style={styles.payoutLabel}>Est. Payout</Text>
+              <Text style={styles.payoutValue}>₹{currentJob.payoutAmount}</Text>
+            </View>
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity style={styles.declineButton} onPress={handleDeclineJob}>
+                <Text style={styles.declineButtonText}>Decline</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.acceptButton} onPress={handleAcceptJob}>
+                <Text style={styles.acceptButtonText}>Accept Job</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
-      </View>
+
+        {/* Background Decorative Info */}
+        <View style={styles.infoSection}>
+          <Text style={styles.infoTitle}>Service Performance</Text>
+          <View style={styles.infoGrid}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoValue}>98%</Text>
+              <Text style={styles.infoLabel}>Acceptance</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoValue}>4.9 ★</Text>
+              <Text style={styles.infoLabel}>Rating</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoValue}>0</Text>
+              <Text style={styles.infoLabel}>Cancellations</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -271,168 +339,288 @@ const styles = StyleSheet.create({
     paddingHorizontal: Theme.spacing.md,
     paddingVertical: Theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.border,
+    borderBottomColor: Theme.colors.surfaceLight,
     backgroundColor: Theme.colors.surface,
   },
-  headerTitle: {
-    fontSize: 18,
+  userInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  avatarContainer: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Theme.colors.surfaceLight,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    borderWidth: 1.5,
+    borderColor: Theme.colors.surface,
+  },
+  userMeta: {
+    marginLeft: Theme.spacing.sm,
+  },
+  userName: {
+    fontSize: 15,
     fontWeight: "bold",
     color: Theme.colors.text,
+  },
+  userRole: {
+    fontSize: 11,
+    color: Theme.colors.textMuted,
+    marginTop: 1,
   },
   logoutBtn: {
     padding: Theme.spacing.xs,
   },
-  logoutText: {
-    color: Theme.colors.textMuted,
-    fontSize: 14,
-  },
-  container: {
-    flex: 1,
+  scrollContent: {
     padding: Theme.spacing.md,
-    justifyContent: "center",
+    paddingBottom: Theme.spacing.xl,
   },
   statusCard: {
     backgroundColor: Theme.colors.surface,
-    borderColor: Theme.colors.border,
+    borderColor: "rgba(148, 163, 184, 0.08)",
     borderWidth: 1,
     borderRadius: Theme.borderRadius.lg,
-    padding: Theme.spacing.lg,
-    alignItems: "center",
-    marginBottom: Theme.spacing.xl,
+    padding: Theme.spacing.md,
+    marginBottom: Theme.spacing.md,
   },
   onlineCard: {
-    borderColor: Theme.colors.success,
-  },
-  statusLabel: {
-    color: Theme.colors.text,
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: Theme.spacing.sm,
-  },
-  statusDesc: {
-    color: Theme.colors.textMuted,
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: Theme.spacing.lg,
+    borderColor: "rgba(16, 185, 129, 0.2)",
   },
   switchRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    width: "100%",
-    paddingHorizontal: Theme.spacing.lg,
   },
-  switchLabel: {
+  statusLabel: {
     color: Theme.colors.text,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
   },
-  menuLink: {
+  statusDesc: {
+    color: Theme.colors.textMuted,
+    fontSize: 12,
+    marginTop: 2,
+    maxWidth: width * 0.6,
+  },
+  earningsCard: {
     backgroundColor: Theme.colors.surface,
-    borderColor: Theme.colors.border,
+    borderColor: "rgba(16, 185, 129, 0.1)",
     borderWidth: 1,
-    borderRadius: Theme.borderRadius.md,
-    paddingVertical: Theme.spacing.md,
-    paddingHorizontal: Theme.spacing.lg,
-    alignItems: "center",
-  },
-  menuLinkText: {
-    color: Theme.colors.text,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  modalBg: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.8)",
-    justifyContent: "flex-end",
-  },
-  alertCard: {
-    backgroundColor: Theme.colors.surfaceLight,
-    borderTopLeftRadius: Theme.borderRadius.lg,
-    borderTopRightRadius: Theme.borderRadius.lg,
+    borderRadius: Theme.borderRadius.lg,
     padding: Theme.spacing.lg,
+    marginBottom: Theme.spacing.lg,
+  },
+  earningsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
   },
-  alertHeader: {
-    color: Theme.colors.primary,
-    fontSize: 14,
+  earningsTitle: {
+    color: Theme.colors.textMuted,
+    fontSize: 11,
     fontWeight: "bold",
     letterSpacing: 1,
-    marginBottom: Theme.spacing.sm,
+  },
+  earningsAmount: {
+    color: Theme.colors.primary,
+    fontSize: 36,
+    fontWeight: "bold",
+    marginVertical: Theme.spacing.sm,
+  },
+  earningsFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(148, 163, 184, 0.06)",
+    paddingTop: Theme.spacing.sm,
+    marginTop: Theme.spacing.xs,
+  },
+  earningsSub: {
+    color: Theme.colors.textMuted,
+    fontSize: 13,
+  },
+  earningsLinkText: {
+    color: Theme.colors.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  demoTrigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(148, 163, 184, 0.05)",
+    borderColor: "rgba(148, 163, 184, 0.1)",
+    borderWidth: 1,
+    borderRadius: Theme.borderRadius.md,
+    paddingVertical: Theme.spacing.sm,
+    marginBottom: Theme.spacing.lg,
+  },
+  demoTriggerText: {
+    color: Theme.colors.textMuted,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  incomingJobCard: {
+    backgroundColor: Theme.colors.surface,
+    borderColor: Theme.colors.primary,
+    borderWidth: 1.5,
+    borderRadius: Theme.borderRadius.lg,
+    padding: Theme.spacing.lg,
+    shadowColor: Theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    marginBottom: Theme.spacing.lg,
+  },
+  incomingJobHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Theme.spacing.md,
+  },
+  alertIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  pulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Theme.colors.primary,
+    marginRight: Theme.spacing.xs,
+  },
+  alertTitle: {
+    color: Theme.colors.primary,
+    fontSize: 11,
+    fontWeight: "bold",
+    letterSpacing: 1,
   },
   timerBadge: {
-    backgroundColor: "rgba(239, 68, 68, 0.15)",
-    borderColor: Theme.colors.danger,
-    borderWidth: 1,
-    paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.xs,
-    borderRadius: Theme.borderRadius.xl,
-    marginBottom: Theme.spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   timerText: {
     color: Theme.colors.danger,
-    fontWeight: "600",
     fontSize: 12,
-  },
-  jobName: {
-    color: Theme.colors.text,
-    fontSize: 24,
     fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: Theme.spacing.sm,
   },
-  jobAddr: {
-    color: Theme.colors.textMuted,
-    fontSize: 15,
-    textAlign: "center",
-    marginBottom: Theme.spacing.lg,
+  taskDescription: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: Theme.colors.text,
+    lineHeight: 28,
+    marginBottom: Theme.spacing.md,
   },
-  statsRow: {
+  jobDetailsGrid: {
+    backgroundColor: Theme.colors.surfaceLight,
+    borderRadius: Theme.borderRadius.md,
+    padding: Theme.spacing.md,
+    marginBottom: Theme.spacing.md,
+  },
+  jobDetailItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginVertical: 4,
+  },
+  jobDetailText: {
+    color: Theme.colors.text,
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
+  },
+  payoutRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "100%",
-    marginBottom: Theme.spacing.xl,
-  },
-  statBox: {
-    width: "30%",
-    backgroundColor: Theme.colors.surface,
-    borderRadius: Theme.borderRadius.md,
-    padding: Theme.spacing.sm,
     alignItems: "center",
+    marginBottom: Theme.spacing.lg,
+    paddingHorizontal: Theme.spacing.xs,
   },
-  statLabel: {
-    color: Theme.colors.textMuted,
-    fontSize: 12,
-  },
-  statVal: {
-    color: Theme.colors.text,
-    fontSize: 16,
-    fontWeight: "bold",
-    marginTop: 4,
-  },
-  acceptBtn: {
-    width: "100%",
-    backgroundColor: Theme.colors.success,
-    borderRadius: Theme.borderRadius.md,
-    paddingVertical: Theme.spacing.md,
-    alignItems: "center",
-    marginBottom: Theme.spacing.sm,
-  },
-  acceptBtnText: {
-    color: Theme.colors.text,
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  declineBtn: {
-    width: "100%",
-    paddingVertical: Theme.spacing.md,
-    alignItems: "center",
-  },
-  declineText: {
+  payoutLabel: {
     color: Theme.colors.textMuted,
     fontSize: 14,
-    fontWeight: "600",
+  },
+  payoutValue: {
+    color: Theme.colors.success,
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  declineButton: {
+    flex: 1,
+    backgroundColor: Theme.colors.surfaceLight,
+    paddingVertical: 14,
+    borderRadius: Theme.borderRadius.md,
+    alignItems: "center",
+    marginRight: Theme.spacing.sm,
+  },
+  declineButtonText: {
+    color: Theme.colors.textMuted,
+    fontSize: 15,
+    fontWeight: "bold",
+  },
+  acceptButton: {
+    flex: 1.5,
+    backgroundColor: Theme.colors.primary,
+    paddingVertical: 14,
+    borderRadius: Theme.borderRadius.md,
+    alignItems: "center",
+  },
+  acceptButtonText: {
+    color: Theme.colors.background,
+    fontSize: 15,
+    fontWeight: "bold",
+  },
+  infoSection: {
+    marginTop: Theme.spacing.md,
+  },
+  infoTitle: {
+    color: Theme.colors.text,
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: Theme.spacing.md,
+  },
+  infoGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  infoItem: {
+    flex: 1,
+    backgroundColor: Theme.colors.surface,
+    borderRadius: Theme.borderRadius.md,
+    padding: Theme.spacing.md,
+    alignItems: "center",
+    marginHorizontal: 4,
+    borderColor: "rgba(148, 163, 184, 0.04)",
+    borderWidth: 1,
+  },
+  infoValue: {
+    color: Theme.colors.text,
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  infoLabel: {
+    color: Theme.colors.textMuted,
+    fontSize: 11,
+    marginTop: 4,
   },
 });
 

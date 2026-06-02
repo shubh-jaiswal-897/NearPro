@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import LandingPage from "./components/LandingPage";
 import BookingFlow from "./components/BookingFlow";
 import TrackingView from "./components/TrackingView";
@@ -18,8 +18,8 @@ export default function App() {
   // Booking details
   const [selectedCategorySlug, setSelectedCategorySlug] = useState("");
   const [activeBookingId, setActiveBookingId] = useState("");
-  const [customerLat, setCustomerLat] = useState(12.9716);
-  const [customerLng, setCustomerLng] = useState(77.5946);
+  const customerLat = 26.7606; // Gorakhpur central coordinates
+  const customerLng = 83.3731;
 
   // Active categories loaded from DB
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
@@ -41,7 +41,7 @@ export default function App() {
       const response = await fetch("http://localhost:4000/api/services/categories");
       if (response.ok) {
         const data = await response.json();
-        setCategories(data.categories || data);
+        setCategories(data.data?.categories || data.categories || data);
       }
     } catch (e) {
       console.log("Could not load categories from Express API. Using offline mock categories.");
@@ -108,6 +108,7 @@ export default function App() {
       {currentScreen === "BOOKING" && (
         <BookingFlow
           categorySlug={selectedCategorySlug}
+          categories={categories}
           token={token}
           isMockMode={isMockMode}
           onBack={() => setCurrentScreen("HOME")}

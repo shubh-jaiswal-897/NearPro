@@ -1,6 +1,9 @@
 import prisma from "../../config/database";
 import supabase from "../../config/supabase";
 import { Role } from "@prisma/client";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-change-in-production-123456";
 
 export class AuthService {
   /**
@@ -31,26 +34,30 @@ export class AuthService {
       throw error;
     }
 
-    // Step 2: Create user in Supabase Auth (admin API — bypasses email confirmation)
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // Auto-confirm so user can log in immediately
-      user_metadata: {
-        firstName,
-        lastName,
-        phoneNumber,
-        role,
-      },
-    });
+    let supabaseUid = `mock-uuid-${Date.now()}`;
+    const isMockAuth = process.env.SUPABASE_SERVICE_ROLE_KEY === "your-service-role-key-here" || !process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (authError || !authData.user) {
-      const error: any = new Error(authError?.message || "Failed to create auth user");
-      error.statusCode = 400;
-      throw error;
+    if (!isMockAuth) {
+      // Step 2: Create user in Supabase Auth (admin API — bypasses email confirmation)
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true, // Auto-confirm so user can log in immediately
+        user_metadata: {
+          firstName,
+          lastName,
+          phoneNumber,
+          role,
+        },
+      });
+
+      if (authError || !authData.user) {
+        const error: any = new Error(authError?.message || "Failed to create auth user");
+        error.statusCode = 400;
+        throw error;
+      }
+      supabaseUid = authData.user.id;
     }
-
-    const supabaseUid = authData.user.id;
 
     // Step 3: Create local DB user + profile in a transaction using Supabase UID as primary key
     try {
@@ -96,7 +103,9 @@ export class AuthService {
       return { user: newUser };
     } catch (dbError: any) {
       // Rollback: remove the Supabase Auth user if DB write fails
-      await supabase.auth.admin.deleteUser(supabaseUid);
+      if (!isMockAuth) {
+        await supabase.auth.admin.deleteUser(supabaseUid);
+      }
       throw dbError;
     }
   }
@@ -108,16 +117,24 @@ export class AuthService {
   static async login(data: any) {
     const { email, password, fcmToken } = data;
 
-    // Authenticate via Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    let accessToken = "mock-jwt-token";
+    let refreshToken = "mock-refresh-token";
+    const isMockAuth = process.env.SUPABASE_SERVICE_ROLE_KEY === "your-service-role-key-here" || !process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (authError || !authData.session) {
-      const error: any = new Error("Invalid email or password");
-      error.statusCode = 401;
-      throw error;
+    if (!isMockAuth) {
+      // Authenticate via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError || !authData.session) {
+        const error: any = new Error("Invalid email or password");
+        error.statusCode = 401;
+        throw error;
+      }
+      accessToken = authData.session.access_token;
+      refreshToken = authData.session.refresh_token;
     }
 
     // Fetch full user profile from local DB
@@ -138,6 +155,14 @@ export class AuthService {
       const error: any = new Error("Account is inactive or does not exist");
       error.statusCode = 401;
       throw error;
+    }
+
+    if (isMockAuth) {
+      accessToken = jwt.sign(
+        { id: user.id, email: user.email, role: user.role },
+        JWT_SECRET,
+        { expiresIn: "24h" }
+      );
     }
 
     // Block unverified workers — must be approved by admin first
@@ -168,8 +193,8 @@ export class AuthService {
 
     return {
       user: userWithoutPassword,
-      token: authData.session.access_token,
-      refreshToken: authData.session.refresh_token,
+      token: accessToken,
+      refreshToken: refreshToken,
     };
   }
 }

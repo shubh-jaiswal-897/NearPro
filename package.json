@@ -3,6 +3,16 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "redis:up": "docker compose up -d redis",
+    "db:push": "bun prisma db push",
+    "db:seed": "bun prisma/seed.ts",
+    "backend": "bun --hot src/server.ts",
+    "admin": "cd admin-app && bun run dev",
+    "customer-web": "cd customer-web-app && bun run dev",
+    "customer-mobile": "cd customer-app && bun run start -- --port 8081",
+    "partner-mobile": "cd partner-app && bun run start -- --port 8082"
+  },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/bun": "latest",

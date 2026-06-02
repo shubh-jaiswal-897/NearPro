@@ -12,8 +12,8 @@ export const registerSchema = z.object({
     profilePictureUrl: z.string().url("Invalid picture URL").optional(),
     
     // Worker specific fields (required if role is WORKER)
-    cityId: z.string().uuid("Invalid City ID").optional(),
-    serviceCategoryId: z.string().uuid("Invalid Service Category ID").optional(),
+    cityId: z.string().min(1, "Invalid City ID").optional(),
+    serviceCategoryId: z.string().min(1, "Invalid Service Category ID").optional(),
     verificationDocUrl: z.string().url("Invalid doc URL").optional(),
     aadhaarNumber: z.string().regex(/^\d{12}$/, "Aadhaar number must be exactly 12 digits").optional(),
   }).refine((data) => {

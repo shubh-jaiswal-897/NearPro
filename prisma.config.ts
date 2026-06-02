@@ -1,4 +1,5 @@
 import { defineConfig, env } from "prisma/config";
+import "dotenv/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -7,6 +8,6 @@ export default defineConfig({
     seed: "bun ./prisma/seed.ts",
   },
   datasource: {
-    url: "postgresql://postgres.eidcvnmxnodhkeywigfq:JK4I60hhXFsOTsNN%40%40@db.eidcvnmxnodhkeywigfq.supabase.co:5432/postgres",
+    url: env("DATABASE_URL"),
   },
 });

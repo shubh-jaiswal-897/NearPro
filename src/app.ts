@@ -6,6 +6,7 @@ import cityRouter from "./modules/cities/city.routes";
 import serviceRouter from "./modules/services/service.routes";
 import bookingRouter from "./modules/bookings/booking.routes";
 import workerRouter from "./modules/workers/worker.routes";
+import userRouter from "./modules/users/user.routes";
 import transactionRouter from "./modules/transactions/transaction.routes";
 import errorHandler from "./middlewares/error.middleware";
 
@@ -34,6 +35,7 @@ app.use("/api/cities", cityRouter);
 app.use("/api/services", serviceRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/workers", workerRouter);
+app.use("/api/users", userRouter);
 app.use("/api/transactions", transactionRouter);
 
 // Global Error Handling Middleware

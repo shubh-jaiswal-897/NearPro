@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Sparkles, Star, Shield, Clock, Utensils, ChefHat, Shirt, Wind, Bath, LogOut, ChevronDown } from "lucide-react";
 import type { ServiceCategory } from "../types";
 

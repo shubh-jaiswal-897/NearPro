@@ -3,7 +3,7 @@ import { useAdmin } from '../context/AdminContext';
 import type { Booking } from '../context/AdminContext';
 
 export const Bookings: React.FC = () => {
-  const { bookings, updateBookingStatus } = useAdmin();
+  const { bookings, workers, updateBookingStatus, assignWorkerToBooking } = useAdmin();
   const [filter, setFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -17,6 +17,14 @@ export const Bookings: React.FC = () => {
 
   const handleStatusChange = (id: string, newStatus: Booking['status']) => {
     updateBookingStatus(id, newStatus);
+  };
+
+  const getEligibleWorkers = (bookingCategoryId: string, bookingCityId: string) => {
+    return workers.filter(w => 
+      w.categoryId === bookingCategoryId && 
+      w.cityId === bookingCityId && 
+      w.status === 'Active'
+    );
   };
 
   return (
@@ -60,7 +68,7 @@ export const Bookings: React.FC = () => {
               <th>Date</th>
               <th>Customer</th>
               <th>Service</th>
-              <th>Worker</th>
+              <th>Worker Assignment</th>
               <th>Amount</th>
               <th>Status</th>
               <th>Actions</th>
@@ -78,7 +86,31 @@ export const Bookings: React.FC = () => {
                   <td>{booking.date}</td>
                   <td>{booking.customer}</td>
                   <td>{booking.service}</td>
-                  <td>{booking.worker || <span className="text-muted">Unassigned</span>}</td>
+                  <td>
+                    {booking.status !== 'Completed' && booking.status !== 'Cancelled' ? (
+                      <select 
+                        value={booking.workerId || ''} 
+                        onChange={(e) => assignWorkerToBooking(booking.id, e.target.value || null)}
+                        style={{
+                          background: 'rgba(0,0,0,0.5)',
+                          border: '1px solid var(--glass-border)',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          outline: 'none',
+                          cursor: 'pointer',
+                          maxWidth: '180px'
+                        }}
+                      >
+                        <option value="">-- Assign Worker --</option>
+                        {getEligibleWorkers(booking.categoryId, booking.cityId).map(w => (
+                          <option key={w.id} value={w.id}>{w.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      booking.worker || <span className="text-muted">Unassigned</span>
+                    )}
+                  </td>
                   <td>₹{booking.amount}</td>
                   <td>
                     <span className={`badge badge-${booking.status === 'Completed' ? 'success' : booking.status === 'Cancelled' ? 'danger' : booking.status === 'In Progress' ? 'warning' : 'primary'}`}>

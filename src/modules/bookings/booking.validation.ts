@@ -7,6 +7,7 @@ export const createBookingSchema = z.object({
     pickupLat: z.number().min(-90).max(90, "Latitude must be between -90 and 90"),
     pickupLng: z.number().min(-180).max(180, "Longitude must be between -180 and 180"),
     pickupAddress: z.string().min(5, "Address must be at least 5 characters long"),
+    durationHours: z.number().min(1).max(12, "Duration must be between 1 and 12 hours").optional(),
   }),
 });
 

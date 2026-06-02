@@ -23,6 +23,7 @@ router.get(
 router.get("/admin/pending", WorkerController.listPending);
 router.get("/admin/all", WorkerController.listAll);
 router.patch("/admin/:id/approve", WorkerController.approve);
+router.patch("/admin/:id/suspend", WorkerController.suspend);
 router.delete("/admin/:id/reject", WorkerController.reject);
 
 export default router;

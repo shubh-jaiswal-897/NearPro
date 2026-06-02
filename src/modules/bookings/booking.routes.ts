@@ -38,4 +38,9 @@ router.patch(
   BookingController.updateStatus
 );
 
+// Admin APIs (Temporarily exposed without JWT auth for local Admin App)
+router.get("/admin/all", BookingController.listAll);
+router.patch("/admin/:id", BookingController.updateAdminBooking);
+router.get("/admin/stats", BookingController.getAdminStats);
+
 export default router;

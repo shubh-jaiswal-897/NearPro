@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import * as ExpoLocation from "expo-location";
 
 export interface GPSCoords {
   latitude: number;
@@ -28,7 +29,6 @@ export const getCurrentLocation = async (): Promise<GPSCoords | null> => {
 
   // Native — use expo-location
   try {
-    const ExpoLocation = await import("expo-location");
     const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
     if (status !== "granted") return null;
 

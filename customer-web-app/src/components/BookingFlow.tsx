@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
-import { ArrowLeft, ArrowRight, ShieldAlert, CheckCircle, CreditCard, Banknote, Landmark, Smartphone } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ArrowLeft, ArrowRight, ShieldAlert, CreditCard, Banknote, Landmark, Smartphone } from "lucide-react";
 import L from "leaflet";
 import "./BookingFlow.css";
 
+import type { ServiceCategory } from "../types";
+
 interface BookingFlowProps {
   categorySlug: string;
+  categories: ServiceCategory[];
   onBack: () => void;
   onBookingCreated: (bookingId: string) => void;
   isMockMode: boolean;
@@ -14,6 +17,7 @@ interface BookingFlowProps {
 
 export default function BookingFlow({
   categorySlug,
+  categories,
   onBack,
   onBookingCreated,
   isMockMode,
@@ -25,11 +29,14 @@ export default function BookingFlow({
   const [instructions, setInstructions] = useState("");
   const [flatNumber, setFlatNumber] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
-  const [lat, setLat] = useState(12.9716); // Default Gorakhpur
-  const [lng, setLng] = useState(77.5946);
+  const [lat, setLat] = useState(26.7606); // Default Gorakhpur central coordinates
+  const [lng, setLng] = useState(83.3731);
   const [paymentMethod, setPaymentMethod] = useState<"UPI" | "CARD" | "CASH" | "WALLET">("UPI");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const [dbServices, setDbServices] = useState<any[]>([]);
+  const [selectedService, setSelectedService] = useState<any>(null);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
@@ -53,7 +60,39 @@ export default function BookingFlow({
     "bathroom-cleaning": { basePrice: 179.00, platformFee: 25.00, name: "Bathroom Express Polish", serviceId: "bathroom-svc-1" },
   };
 
-  const currentPricing = basePricings[categorySlug] || basePricings.dishwashing;
+  // Effect to load DB services if not in mock mode
+  useEffect(() => {
+    if (isMockMode) return;
+    const currentCategory = categories.find(c => c.slug === categorySlug);
+    if (!currentCategory) return;
+
+    const fetchServices = async () => {
+      try {
+        const response = await fetch(`http://localhost:4000/api/services/category/${currentCategory.id}?cityId=gorakhpur-city-uuid-10001`);
+        if (response.ok) {
+          const data = await response.json();
+          const list = data.data?.services || data.services || data;
+          if (list && list.length > 0) {
+            setDbServices(list);
+            setSelectedService(list[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load live services:", err);
+      }
+    };
+
+    fetchServices();
+  }, [isMockMode, categorySlug, categories]);
+
+  const currentPricing = isMockMode || !selectedService
+    ? (basePricings[categorySlug] || basePricings.dishwashing)
+    : {
+        basePrice: selectedService.pricing?.basePrice || 99,
+        platformFee: selectedService.pricing?.platformFee || 15,
+        name: selectedService.name,
+        serviceId: selectedService.id
+      };
 
   // Pricing math
   const serviceCharge = currentPricing.basePrice * hours;
@@ -144,9 +183,7 @@ export default function BookingFlow({
       pickupLat: lat,
       pickupLng: lng,
       pickupAddress: `${flatNumber}, ${streetAddress}, Gorakhpur`,
-      totalPrice,
-      platformCut: platformFee,
-      workerCut: serviceCharge - platformFee,
+      durationHours: hours,
     };
 
     if (isMockMode) {
@@ -226,6 +263,27 @@ export default function BookingFlow({
         {/* Step 1: Configure Service duration */}
         {step === 1 && (
           <div style={{ animation: "fadeIn 0.2s ease" }}>
+            {!isMockMode && dbServices.length > 0 && (
+              <div className="config-group">
+                <label className="form-label" style={{ fontSize: "15px", marginBottom: "8px", display: "block" }}>
+                  Select Service Type
+                </label>
+                <select
+                  value={selectedService?.id || ""}
+                  onChange={(e) => {
+                    const svc = dbServices.find(s => s.id === e.target.value);
+                    if (svc) setSelectedService(svc);
+                  }}
+                  className="form-input"
+                  style={{ width: "100%", padding: "12px", background: "#F9FAFB", borderRadius: "8px", color: "#333", border: "1px solid #ddd" }}
+                >
+                  {dbServices.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} (₹{s.pricing?.basePrice || 99}/hr)</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="config-group">
               <h3 style={{ fontSize: "16px", marginBottom: "8px" }}>Select Service Duration</h3>
               <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "16px" }}>

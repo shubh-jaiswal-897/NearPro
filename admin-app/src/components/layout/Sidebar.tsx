@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Briefcase, Settings, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, Briefcase, Settings, LogOut, X } from 'lucide-react';
 
 interface SidebarProps {
   isMobileMenuOpen: boolean;
@@ -56,7 +56,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileMenuOpen, setIsMobileM
             onClick={() => setIsMobileMenuOpen(false)}
             style={{ width: '100%', justifyContent: 'flex-start', background: 'transparent' }}
           >
-            <Users size={20} /> Workers
+            <UserCheck size={20} /> Workers
+          </NavLink>
+
+          <NavLink 
+            to="/users" 
+            className={({ isActive }) => `nav-item btn ${isActive ? 'active' : ''}`}
+            onClick={() => setIsMobileMenuOpen(false)}
+            style={{ width: '100%', justifyContent: 'flex-start', background: 'transparent' }}
+          >
+            <Users size={20} /> Users
           </NavLink>
 
           <NavLink 

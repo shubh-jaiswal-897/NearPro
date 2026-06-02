@@ -38,6 +38,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 
   const [loading, setLoading] = useState(false);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!isLogin) {
@@ -56,15 +57,25 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       setCategories(catsRes.data.data.categories);
     } catch (e) {
       console.error("Failed to load cities/skills metadata:", e);
-      Alert.alert("Connection Error", "Could not load cities and skill categories list.");
+      if (Platform.OS === 'web') {
+        window.alert("Connection Error: Could not load cities and skill categories list.");
+      } else {
+        Alert.alert("Connection Error", "Could not load cities and skill categories list.");
+      }
     } finally {
       setLoadingMetadata(false);
     }
   };
 
   const handleSubmit = async () => {
+    setFieldErrors({});
+    
     if (!email || !password || (!isLogin && (!firstName || !lastName || !phoneNumber || !selectedCityId || !selectedCategoryId))) {
-      Alert.alert("Error", "Please fill in all required fields");
+      if (Platform.OS === 'web') {
+        window.alert("Error: Please fill in all required fields");
+      } else {
+        Alert.alert("Error", "Please fill in all required fields");
+      }
       return;
     }
 
@@ -80,7 +91,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
             firstName,
             lastName,
             phoneNumber,
-            aadhaarNumber,
+            aadhaarNumber: aadhaarNumber.trim() === "" ? undefined : aadhaarNumber,
             role: "WORKER",
             cityId: selectedCityId,
             serviceCategoryId: selectedCategoryId,
@@ -90,7 +101,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       const { token, user } = response.data.data;
 
       if (!isLogin) {
-        Alert.alert("Success", "Registration successful! Your application is pending admin approval.");
+        if (Platform.OS === 'web') {
+          window.alert("Success: Registration successful! Your application is pending admin approval.");
+        } else {
+          Alert.alert("Success", "Registration successful! Your application is pending admin approval.");
+        }
         setIsLogin(true);
         setLoading(false);
         return;
@@ -98,7 +113,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 
       // Verify that user logged in is a worker
       if (user.role !== "WORKER") {
-        Alert.alert("Access Denied", "Please use the Customer App to log into this account.");
+        if (Platform.OS === 'web') {
+          window.alert("Access Denied: Please use the Customer App to log into this account.");
+        } else {
+          Alert.alert("Access Denied", "Please use the Customer App to log into this account.");
+        }
         setLoading(false);
         return;
       }
@@ -110,8 +129,32 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       onAuthSuccess();
     } catch (error: any) {
       console.error("Authentication request error:", error);
-      const msg = error.response?.data?.message || "Failed. Check credentials.";
-      Alert.alert("Registration Failed", msg);
+      let msg = error.response?.data?.message || "Failed. Check credentials or validation.";
+      if (error.response?.data?.errors) {
+        console.error("Validation errors:", error.response.data.errors);
+        
+        // Map backend errors to inline field errors
+        const newFieldErrors: Record<string, string> = {};
+        error.response.data.errors.forEach((err: any) => {
+          // err.field will be something like "body.phoneNumber" or "body.aadhaarNumber"
+          const fieldName = err.field.replace("body.", "");
+          newFieldErrors[fieldName] = err.message;
+        });
+        setFieldErrors(newFieldErrors);
+
+        const errorDetails = error.response.data.errors.map((err: any) => err.message).join("\n");
+        msg = `${msg}\n${errorDetails}`;
+      }
+      
+      // If we mapped field errors, we might not need an aggressive popup for everything,
+      // but we still keep it as a fallback for now.
+      if (Object.keys(fieldErrors).length === 0) {
+        if (Platform.OS === 'web') {
+          window.alert(`Registration Failed:\n${msg}`);
+        } else {
+          Alert.alert("Registration Failed", msg);
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -130,47 +173,97 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           </Text>
 
           {!isLogin && (
-            <View style={styles.row}>
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="First Name"
-                placeholderTextColor={Theme.colors.textMuted}
-                value={firstName}
-                onChangeText={setFirstName}
-              />
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="Last Name"
-                placeholderTextColor={Theme.colors.textMuted}
-                value={lastName}
-                onChangeText={setLastName}
-              />
-            </View>
-          )}
-
-          {!isLogin && (
             <>
-              <TextInput
-                style={styles.input}
-                placeholder="Phone Number"
-                placeholderTextColor={Theme.colors.textMuted}
-                keyboardType="phone-pad"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Aadhar No"
-                placeholderTextColor={Theme.colors.textMuted}
-                keyboardType="number-pad"
-                maxLength={12}
-                value={aadhaarNumber}
-                onChangeText={setAadhaarNumber}
-              />
+              <View style={styles.nameRow}>
+                <View style={styles.halfInput}>
+                  <Text style={styles.label}>First Name</Text>
+                  <View style={[styles.inputContainer, fieldErrors.firstName && styles.inputError]}>
+                    <Ionicons name="person-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="First Name"
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                  {fieldErrors.firstName && <Text style={styles.errorText}>{fieldErrors.firstName}</Text>}
+                </View>
+                
+                <View style={styles.halfInput}>
+                  <Text style={styles.label}>Last Name</Text>
+                  <View style={[styles.inputContainer, fieldErrors.lastName && styles.inputError]}>
+                    <Ionicons name="person-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Last Name"
+                      value={lastName}
+                      onChangeText={setLastName}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                  {fieldErrors.lastName && <Text style={styles.errorText}>{fieldErrors.lastName}</Text>}
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Phone Number</Text>
+                <View style={[styles.inputContainer, fieldErrors.phoneNumber && styles.inputError]}>
+                  <Ionicons name="call-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter phone number"
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+                {fieldErrors.phoneNumber && <Text style={styles.errorText}>{fieldErrors.phoneNumber}</Text>}
+              </View>
             </>
           )}
 
-          {/* Select City and Skill Category if Registering */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <View style={[styles.inputContainer, fieldErrors.email && styles.inputError]}>
+              <Ionicons name="mail-outline" size={20} color="#64748b" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+            {fieldErrors.email && <Text style={styles.errorText}>{fieldErrors.email}</Text>}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Password</Text>
+            <View style={[styles.inputContainer, fieldErrors.password && styles.inputError]}>
+              <Ionicons name="lock-closed-outline" size={20} color="#64748b" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity 
+                style={styles.eyeIcon} 
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons 
+                  name={showPassword ? "eye-off" : "eye"} 
+                  size={20} 
+                  color={Theme.colors.textMuted} 
+                />
+              </TouchableOpacity>
+            </View>
+            {fieldErrors.password && <Text style={styles.errorText}>{fieldErrors.password}</Text>}
+          </View>
+
           {!isLogin && (
             <View style={{ width: "100%" }}>
               <Text style={styles.selectLabel}>Select Operational City</Text>
@@ -206,37 +299,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
               )}
             </View>
           )}
-
-          <TextInput
-            style={styles.input}
-            placeholder="Email Address"
-            placeholderTextColor={Theme.colors.textMuted}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
-          />
-
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              placeholder="Password"
-              placeholderTextColor={Theme.colors.textMuted}
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
-            />
-            <TouchableOpacity 
-              style={styles.eyeIcon} 
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <Ionicons 
-                name={showPassword ? "eye-off" : "eye"} 
-                size={20} 
-                color={Theme.colors.textMuted} 
-              />
-            </TouchableOpacity>
-          </View>
 
           <TouchableOpacity
             style={styles.button}
@@ -294,37 +356,36 @@ const styles = StyleSheet.create({
     color: Theme.colors.textMuted,
     marginBottom: Theme.spacing.lg,
   },
-  row: {
+  nameRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
   },
-  input: {
+  inputGroup: {
     width: "100%",
-    backgroundColor: Theme.colors.surface,
-    borderColor: Theme.colors.border,
-    borderWidth: 1,
-    borderRadius: Theme.borderRadius.md,
-    color: Theme.colors.text,
-    paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.sm,
     marginBottom: Theme.spacing.md,
-    fontSize: 15,
   },
-  passwordContainer: {
-    width: "100%",
+  label: {
+    color: Theme.colors.text,
+    fontSize: 14,
+    marginBottom: 4,
+    marginLeft: 4,
+  },
+  inputContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Theme.colors.surface,
     borderColor: Theme.colors.border,
     borderWidth: 1,
     borderRadius: Theme.borderRadius.md,
-    marginBottom: Theme.spacing.md,
+    paddingHorizontal: Theme.spacing.sm,
   },
-  passwordInput: {
+  inputIcon: {
+    marginRight: 8,
+  },
+  input: {
     flex: 1,
     color: Theme.colors.text,
-    paddingHorizontal: Theme.spacing.md,
     paddingVertical: Theme.spacing.sm,
     fontSize: 15,
   },
@@ -384,6 +445,15 @@ const styles = StyleSheet.create({
   toggleText: {
     color: Theme.colors.textMuted,
     fontSize: 13,
+  },
+  inputError: {
+    borderColor: Theme.colors.danger,
+  },
+  errorText: {
+    color: Theme.colors.danger,
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
 });
 

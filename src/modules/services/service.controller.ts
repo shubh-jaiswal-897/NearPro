@@ -116,6 +116,92 @@ export class ServiceCatalogController {
       next(error);
     }
   }
+
+  /**
+   * ADMIN: GET /api/services/admin/categories
+   */
+  static async listAllCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const categories = await ServiceCatalogService.listAllCategories();
+      res.status(200).json({ status: "success", data: { categories } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * ADMIN: POST /api/services/admin/categories
+   */
+  static async createCategoryAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const category = await ServiceCatalogService.createCategory(req.body);
+      res.status(201).json({
+        status: "success",
+        message: "Service category created successfully",
+        data: { category },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * ADMIN: GET /api/services/admin/all
+   */
+  static async listAllServices(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const services = await ServiceCatalogService.listAllServices();
+      res.status(200).json({ status: "success", data: { services } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * ADMIN: POST /api/services/admin/services
+   */
+  static async createServiceAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const service = await ServiceCatalogService.createServiceAdmin(req.body);
+      res.status(201).json({
+        status: "success",
+        message: "Service created successfully with default pricing",
+        data: { service },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * ADMIN: PATCH /api/services/admin/services/:id/toggle
+   */
+  static async toggleServiceActive(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const service = await ServiceCatalogService.toggleServiceActive(id);
+      res.status(200).json({
+        status: "success",
+        message: `Service status toggled successfully`,
+        data: { service },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * ADMIN: DELETE /api/services/admin/services/:id
+   */
+  static async deleteServiceAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const result = await ServiceCatalogService.deleteServiceAdmin(id);
+      res.status(200).json({ status: "success", ...result });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default ServiceCatalogController;
