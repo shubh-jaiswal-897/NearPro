@@ -20,6 +20,15 @@ app.use(express.urlencoded({ extended: true }));
 // Serve file uploads statically for local development fallback
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
+// Root endpoint
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Welcome to NearPro API Server!",
+    health: "/health",
+    version: "1.0.0"
+  });
+});
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.status(200).json({
