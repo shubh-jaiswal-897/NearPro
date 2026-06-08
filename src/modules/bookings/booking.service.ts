@@ -263,7 +263,7 @@ export class BookingService {
     const lockKey = `booking:lock:${bookingId}`;
 
     // 1. Attempt to acquire Redis lock to handle concurrency
-    const acquired = await redis.set(lockKey, workerUserId, "NX", "PX", 5000);
+    const acquired = await (redis.set as any)(lockKey, workerUserId, "NX", "PX", 5000);
 
     if (acquired !== "OK") {
       const error: any = new Error("This job booking has already been accepted by another technician");

@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 
 // Use localhost for iOS simulator, and 10.0.2.2 for Android emulator
 // In production, change to your hosted API domain.
-const API_URL = "http://localhost:4000/api";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000/api";
 
 export const api = axios.create({
   baseURL: API_URL,

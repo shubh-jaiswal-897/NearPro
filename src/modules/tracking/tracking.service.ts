@@ -144,7 +144,7 @@ export class TrackingService {
       // Run Redis GEOSEARCH query
       // Format: GEOSEARCH key FROMLONLAT lng lat BYRADIUS radius km WITHDIST ASC
       // ioredis supports geosearch directly
-      const results = (await redis.send_command(
+      const results = (await (redis as any).sendCommand(
         "GEOSEARCH",
         geoKey,
         "FROMLONLAT",

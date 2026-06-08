@@ -37,8 +37,8 @@ export const registerSocketHandlers = (socket: AuthenticatedSocket, io: Server) 
       });
 
       // Keep track of socket mapping in socket data
-      socket.data.workerId = workerId;
-      socket.data.cityId = cityId;
+      (socket.data as any).workerId = workerId;
+      (socket.data as any).cityId = cityId;
 
       logger.info(`Worker registered online: ID ${workerId} | City ${cityId}`);
       socket.emit("worker:registered", { status: "success", isOnline: true });

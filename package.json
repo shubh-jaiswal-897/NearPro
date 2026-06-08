@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "build": "prisma generate",
     "redis:up": "docker compose up -d redis",
     "db:push": "bun prisma db push",
     "db:seed": "bun prisma/seed.ts",

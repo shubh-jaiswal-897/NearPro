@@ -20,7 +20,7 @@ export class UserController {
   static async toggleActive(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const user = await UserService.toggleUserActive(id);
+      const user = await UserService.toggleUserActive(id as string);
       res.status(200).json({
         status: "success",
         message: `User status changed to ${user.isActive ? "Active" : "Inactive"}`,
@@ -37,7 +37,7 @@ export class UserController {
   static async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const result = await UserService.deleteUser(id);
+      const result = await UserService.deleteUser(id as string);
       res.status(200).json({ status: "success", ...result });
     } catch (error) {
       next(error);

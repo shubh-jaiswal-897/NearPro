@@ -6,6 +6,9 @@ import AuthModal from "./components/AuthModal";
 import type { ServiceCategory } from "./types";
 import "./App.css";
 
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000/api";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:4000";
+
 type Screen = "HOME" | "BOOKING" | "TRACKING";
 
 export default function App() {
@@ -38,7 +41,7 @@ export default function App() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/services/categories");
+      const response = await fetch(`${API_BASE}/services/categories`);
       if (response.ok) {
         const data = await response.json();
         setCategories(data.data?.categories || data.categories || data);
@@ -77,7 +80,7 @@ export default function App() {
       {/* Mock Mode Control Bar */}
       <div className="mode-bar">
         <span style={{ fontSize: "12px", fontWeight: 600 }}>
-          ⚙️ Environment: {isMockMode ? "🔴 Mock (Simulated Workflow)" : "🟢 Live API Connection (ws://localhost:4000)"}
+          ⚙️ Environment: {isMockMode ? "🔴 Mock (Simulated Workflow)" : `🟢 Live API Connection (${SOCKET_URL.replace(/^http/, 'ws')})`}
         </span>
         <button
           className="mode-toggle-btn"

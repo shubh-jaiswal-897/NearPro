@@ -93,7 +93,7 @@ export class BookingController {
     try {
       const { id } = req.params;
       const { status, workerId, cancellationReason } = req.body;
-      const booking = await BookingService.updateAdminBookingStatusAndAssignment(id, {
+      const booking = await BookingService.updateAdminBookingStatusAndAssignment(id as string, {
         status,
         workerId,
         cancellationReason,

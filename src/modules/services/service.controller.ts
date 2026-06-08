@@ -65,7 +65,7 @@ export class ServiceCatalogController {
         return;
       }
 
-      const services = await ServiceCatalogService.getServicesByCategory(categoryId, cityId);
+      const services = await ServiceCatalogService.getServicesByCategory(categoryId as string, cityId);
       res.status(200).json({
         status: "success",
         data: { services },
@@ -179,7 +179,7 @@ export class ServiceCatalogController {
   static async toggleServiceActive(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const service = await ServiceCatalogService.toggleServiceActive(id);
+      const service = await ServiceCatalogService.toggleServiceActive(id as string);
       res.status(200).json({
         status: "success",
         message: `Service status toggled successfully`,
@@ -196,7 +196,7 @@ export class ServiceCatalogController {
   static async deleteServiceAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const result = await ServiceCatalogService.deleteServiceAdmin(id);
+      const result = await ServiceCatalogService.deleteServiceAdmin(id as string);
       res.status(200).json({ status: "success", ...result });
     } catch (error) {
       next(error);

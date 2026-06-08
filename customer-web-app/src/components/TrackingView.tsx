@@ -4,6 +4,8 @@ import L from "leaflet";
 import io from "socket.io-client";
 import "./TrackingView.css";
 
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:4000";
+
 interface TrackingViewProps {
   bookingId: string;
   onBackToHome: () => void;
@@ -190,7 +192,7 @@ export default function TrackingView({
     if (isMockMode) return;
 
     // Connect to websocket server
-    socketRef.current = io("http://localhost:4000", {
+    socketRef.current = io(SOCKET_URL, {
       auth: { token },
     });
 

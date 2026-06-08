@@ -5,6 +5,8 @@ import "./BookingFlow.css";
 
 import type { ServiceCategory } from "../types";
 
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000/api";
+
 interface BookingFlowProps {
   categorySlug: string;
   categories: ServiceCategory[];
@@ -68,7 +70,7 @@ export default function BookingFlow({
 
     const fetchServices = async () => {
       try {
-        const response = await fetch(`http://localhost:4000/api/services/category/${currentCategory.id}?cityId=gorakhpur-city-uuid-10001`);
+        const response = await fetch(`${API_BASE}/services/category/${currentCategory.id}?cityId=gorakhpur-city-uuid-10001`);
         if (response.ok) {
           const data = await response.json();
           const list = data.data?.services || data.services || data;
@@ -197,7 +199,7 @@ export default function BookingFlow({
 
     try {
       // Attempt real booking creation via Express API
-      const response = await fetch("http://localhost:4000/api/bookings", {
+      const response = await fetch(`${API_BASE}/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

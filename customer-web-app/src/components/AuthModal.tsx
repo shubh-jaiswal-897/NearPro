@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { X } from "lucide-react";
 import "./AuthModal.css";
 
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000/api";
+
 interface AuthModalProps {
   onClose: () => void;
   onSuccess: (token: string, user: { firstName: string; lastName: string; email: string; phoneNumber: string; role: string }) => void;
@@ -44,12 +46,12 @@ export default function AuthModal({ onClose, onSuccess, isMockMode }: AuthModalP
 
     // Live mode connection
     try {
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
+      const endpoint = isLogin ? "/auth/login" : "/auth/register";
       const payload = isLogin
         ? { email, password }
         : { firstName, lastName, email, phoneNumber, password, role: "CUSTOMER" };
 
-      const response = await fetch(`http://localhost:4000${endpoint}`, {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,7 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import * as SecureStore from "../utils/secureStore";
 
-const SOCKET_URL = "http://localhost:4000";
+const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || "http://localhost:4000";
 
 class SocketService {
   private socket: Socket | null = null;

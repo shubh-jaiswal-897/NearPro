@@ -69,7 +69,7 @@ export class WorkerController {
   static async approve(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const worker = await WorkerService.approveWorker(id);
+      const worker = await WorkerService.approveWorker(id as string);
       res.status(200).json({
         status: "success",
         message: "Worker approved successfully",
@@ -86,7 +86,7 @@ export class WorkerController {
   static async suspend(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const worker = await WorkerService.suspendWorker(id);
+      const worker = await WorkerService.suspendWorker(id as string);
       res.status(200).json({
         status: "success",
         message: "Worker suspended successfully",
@@ -103,7 +103,7 @@ export class WorkerController {
   static async reject(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const result = await WorkerService.rejectWorker(id);
+      const result = await WorkerService.rejectWorker(id as string);
       res.status(200).json({ status: "success", ...result });
     } catch (error) {
       next(error);
