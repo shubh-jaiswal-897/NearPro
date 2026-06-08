@@ -1,7 +1,6 @@
 {
   "name": "nearpro",
   "module": "index.ts",
-  "type": "module",
   "private": true,
   "scripts": {
     "build": "prisma generate",
