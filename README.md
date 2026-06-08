@@ -300,11 +300,37 @@ bun run db:seed
 ```
 
 #### 4. Run the Application Servers
-Open separate terminal screens and boot up the desired application instances:
-
+Open separate terminal windows and boot up the desired application instances:
 ```bash
-bun run index.ts
+# 1. Backend API & Socket Server (Port 4000)
+bun run backend
+
+# 2. Admin Dashboard (Vite Web App)
+bun run admin
+
+# 3. Customer Web App (Vite Web App)
+bun run customer-web
+
+# 4. Customer Mobile Application (Expo App)
+bun run customer-mobile
+
+# 5. Partner Mobile Application (Expo App)
+bun run partner-mobile
+
+# 6. Snabit Sandbox Client (Vite Web App)
+cd snabit/client && bun run dev
 ```
-id Shubh
-pass Shubh@1234
-This project was created using `bun init` in bun v1.3.12. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+
+---
+
+## 🔑 Default Credentials (महत्वपूर्ण लॉगिन)
+For local testing or seeded database configurations:
+- **Default ID / Username:** `Shubh`
+- **Default Password:** `Shubh@1234`
+
+---
+
+## 🔬 Theoretical Roadmaps & Enhancements
+1. **Surge Pricing Algorithms:** Implementing dynamic coefficient models $P_s = P_b \times (1 + \alpha(\frac{\text{Demand}}{\text{Supply}}))$ based on hyperlocal query frequency.
+2. **Predictive Dispatch Allocation:** Utilizing historic order tracks to forecast spatial provider demand before bookings are submitted.
+3. **Offline Location Queues:** Allowing partner mobile apps to cache location traces locally in SQLite database during network dropouts and batch-sync them to server history upon reconnection.
