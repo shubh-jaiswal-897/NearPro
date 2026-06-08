@@ -303,26 +303,8 @@ bun run db:seed
 Open separate terminal screens and boot up the desired application instances:
 
 ```bash
-# Boot Express Backend API & Sockets
-bun run backend
-
-# Boot Admin Portal
-bun run admin
-
-# Boot Customer Web Portal
-bun run customer-web
-
-# Boot Customer Mobile Client
-bun run customer-mobile
-
-# Boot Partner/Worker Mobile Client
-bun run partner-mobile
+bun run index.ts
 ```
-
----
-
-## 🔬 Theoretical Roadmaps & Enhancements
-
-1. **Surge Pricing Algorithms:** Implementing dynamic coefficient models $P_s = P_b \times (1 + \alpha(\frac{\text{Demand}}{\text{Supply}}))$ based on hyperlocal query frequency.
-2. **Predictive Dispatch Allocation:** Utilizing historic order tracks to forecast spatial provider demand before bookings are submitted.
-3. **Offline Location Queues:** Allowing partner mobile apps to cache location traces locally in SQLite database during network dropouts and batch-sync them to server history upon reconnection.
+id Shubh
+pass Shubh@1234
+This project was created using `bun init` in bun v1.3.12. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
