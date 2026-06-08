@@ -1,184 +1,328 @@
-# 📍 NearPro - On-Demand Home Services Marketplace
+# 📍 NearPro: On-Demand Hyperlocal Home Services Marketplace
 
-NearPro is a modern, real-time, on-demand home services marketplace application (similar to Uber or Urban Company). It allows customers to book various services (plumbing, cleaning, electrical, etc.), match with nearby workers, track worker locations in real-time, and handle transactions seamlessly.
+NearPro is a real-time, spatial-temporal on-demand marketplace platform matching consumer service requests (plumbing, electrical work, cleaning, etc.) with geographically proximate, verified service providers (workers). 
 
----
-
-## 🛠️ Architecture & Tech Stack
-
-NearPro is structured as a multi-application repository containing the following services:
-
-### 1. 🖥️ Backend API & WebSockets Server (`/`)
-- **Runtime:** [Bun](https://bun.sh/) (Fast JS runtime)
-- **Framework:** Express.js (REST API Endpoints)
-- **Real-Time Communication:** Socket.IO with Redis Adapter (for real-time worker tracking & notifications)
-- **Database ORM:** Prisma ORM
-- **Database:** PostgreSQL with **PostGIS** extension (for spatial routing, geofencing, and proximity queries)
-- **Caching & Pub/Sub:** Redis
-- **Auth & Services:** Supabase Auth (legacy fallback support), Firebase Admin SDK (for FCM Push Notifications)
-- **File Uploads:** AWS S3 (for worker verification documents & pictures) or local file storage fallback
-
-### 2. 🛡️ Admin Panel Dashboard (`/admin-app`)
-- **Tech Stack:** React (v19) + TypeScript + Vite
-- **Purpose:** Admin portal to manage cities, service categories, pricing tables, view active bookings, and verify worker profiles.
-
-### 3. 🌐 Customer Web Application (`/customer-web-app`)
-- **Tech Stack:** React (v19) + TypeScript + Vite + Leaflet Maps
-- **Purpose:** Web-based interface for customers to browse service categories, check pricing, book services, and track workers on a map in real-time.
-
-### 4. 📱 Customer Mobile App (`/customer-app`)
-- **Tech Stack:** React Native (Expo) + TypeScript + React Navigation + Leaflet/Native Maps
-- **Purpose:** Cross-platform mobile application for customers to book services on the go.
-
-### 5. 👷 Partner/Worker Mobile App (`/partner-app`)
-- **Tech Stack:** React Native (Expo) + TypeScript + Background Location Services
-- **Purpose:** Mobile application for service providers (workers) to set their online status, receive job bookings, stream real-time location coordinates, update work progress, and view payout/earnings logs.
-
-### 6. 📝 Snabit Code Sandbox Client (`/snabit/client`)
-- **Tech Stack:** React + Vite + TypeScript
-- **Purpose:** A sandbox/playground client for managing and executing serverless Javascript code snippets.
+The platform optimizes hyperlocal resource matching under spatial-temporal constraints to solve the classical "liquidity density" problem: maximizing matching rate while minimizing customer wait times and provider fuel/transit overhead.
 
 ---
 
-## 🔑 Default Credentials (महत्वपूर्ण लॉगिन)
-For local testing or seeded database configurations:
-- **Default ID / Username:** `Shubh`
-- **Default Password:** `Shubh@1234`
+## 🔬 Scientific & Architectural Design
 
----
+The platform resolves matching challenges by combining database geofencing, real-time cache indexing, and network routing services.
 
-## 🚀 Quick Start Guide (चलाने की विधि)
+### 1. Spatial-Temporal System Architecture
 
-### Prerequisites (आवश्यक चीजें)
-Make sure you have the following installed:
-- [Bun Runtime](https://bun.sh/) (Highly recommended for fast execution)
-- [Node.js](https://nodejs.org/) (Required for Expo CLI and React Native packing)
-- [Docker](https://www.docker.com/) (Required for running PostgreSQL + PostGIS & Redis container locally)
-- [Expo Go App](https://expo.dev/client) (On your Android/iOS device to run and test mobile applications)
+```mermaid
+graph TD
+    %% Clients
+    CustomerWeb["🌐 Customer Web Portal<br/>(React + Vite + Leaflet)"]
+    CustomerMobile["📱 Customer Mobile App<br/>(React Native + Expo)"]
+    PartnerMobile["👷 Partner Mobile App<br/>(React Native + Expo)"]
+    AdminPanel["🛡️ Admin Dashboard<br/>(React + Vite)"]
 
----
+    %% Gateway and Application Server
+    Server["🟢 Backend API Server<br/>(Bun + Express + Node)"]
+    Sockets["⚡ WebSocket Gateway<br/>(Socket.IO)"]
 
-## ⚙️ Environment Configuration
+    %% Infrastructure Components
+    PostGIS["🐘 PostgreSQL + PostGIS<br/>(Transactional DB & Geofencing)"]
+    Redis["🔴 Redis Server<br/>(Geo-index, Metadata, Locks)"]
+    Maps["🗺️ Google Maps Distance Matrix<br/>(Road Network ETAs)"]
+    Firebase["🔥 Firebase SDK & APNs<br/>(Push Alert Fallbacks)"]
 
-1. Locate the `.env.example` file in the root directory.
-2. Copy it to a new file named `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-3. Open `.env` and fill out your credentials. Here are the core variables needed for local operation:
-   - `DATABASE_URL`: Your PostgreSQL connection string (needs to have PostGIS extension enabled).
-   - `REDIS_URL`: Redis connection URL (e.g., `redis://localhost:6379`).
-   - `JWT_SECRET`: Secret token for JWT session signing.
-   - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`: Required if using Supabase features.
-   - `GOOGLE_MAPS_API_KEY`: Required for maps and geolocation services.
+    %% Connections
+    CustomerWeb <-->|HTTP / WS| Server
+    CustomerMobile <-->|HTTP / WS| Server
+    PartnerMobile <-->|HTTP / WS| Server
+    AdminPanel <-->|HTTP / WS| Server
 
----
-
-## 📦 Dependency Installation
-
-Before running the projects, you must install dependencies for each app. Run the following commands in the root directory:
-
-```bash
-# 1. Install root dependencies (Backend and general packages)
-bun install
-
-# 2. Install Admin Dashboard dependencies
-cd admin-app && bun install && cd ..
-
-# 3. Install Customer Web App dependencies
-cd customer-web-app && bun install && cd ..
-
-# 4. Install Customer Mobile App dependencies
-cd customer-app && bun install && cd ..
-
-# 5. Install Partner Mobile App dependencies
-cd partner-app && bun install && cd ..
-
-# 6. Install Snabit Client dependencies
-cd snabit/client && bun install && cd ../..
+    Server <--> Sockets
+    Server <-->|SQL Queries| PostGIS
+    Server <-->|Commands / PubSub| Redis
+    Server -->|Fetch ETAs| Maps
+    Server -->|Trigger FCM| Firebase
 ```
 
 ---
 
-## 🏃‍♂️ How to Run the Project (प्रोजेक्ट कैसे रन करें)
+## 📐 Mathematical Formulation & Geospatial Heuristics
 
-You can run each of the applications using the root-level scripts defined in the root `package.json`, or navigate to each directory manually.
+NearPro relies on three distinct layers of mathematical spatial filtering to optimize the candidate pool:
 
-### Step 1: Start Database & Redis (Docker)
-Start the local PostGIS PostgreSQL and Redis containers:
-```bash
-bun run redis:up
-```
-*(Alternatively, run `docker compose up -d` in the root folder).*
+### 1. Hard Geofencing (PostGIS R-Tree Bounds)
+A customer coordinate $C(\text{lat}, \text{lng})$ is checked against active operational city boundaries represented as multi-polygons $P_i$. The activation function is:
 
-### Step 2: Push Database Schema & Seed Data
-Push the Prisma schemas to your database and run the seeds to populate operational cities, categories, and test data:
-```bash
-# Push schema structure to Database
-bun run db:push
+$$\text{IsOperational}(P_i, C) = \begin{cases} 1 & \text{if } C \in P_i \\ 0 & \text{otherwise} \end{cases}$$
 
-# Seed default cities, categories, pricing & admin
-bun run db:seed
+This is evaluated at the database layer using PostGIS indexing and the `ST_Covers` operator:
+```sql
+SELECT id FROM "City"
+WHERE ST_Covers(boundary, ST_SetSRID(ST_Point(lng, lat), 4326)::geography)
+  AND "isActive" = true LIMIT 1;
 ```
 
-### Step 3: Run the Services (अलग-अलग एप्लिकेशन चलाएं)
+### 2. Proximity Range Querying (Haversine Approximation)
+To minimize database scan latency, the system utilizes a spherical earth distance calculation (Haversine formula) inside Redis' spatial index or PostgreSQL fallback:
 
-Here are the commands to start the different apps. Open separate terminal windows for each:
+$$d = 2R \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta\lambda}{2}\right)}\right)$$
 
-#### 🟢 1. Backend API Server (Port: 4000)
-Starts the Express API and Socket.io tracking server:
-```bash
-bun run backend
+Where $R = 6371$ km (earth radius), $\phi$ is latitude, and $\lambda$ is longitude. In Redis, this is executed via:
+`GEOSEARCH active_workers:cityId FROMLONLAT lng lat BYRADIUS 5 km WITHDIST ASC`
+
+### 3. Actual Road-Network ETA Routing (Distance Matrix)
+As crow-flies distance fails to represent urban traffic and route geography, NearPro resolves road durations for the top candidates:
+
+$$\text{Candidates} = \text{SortByETA}\Big(\{ w_j \mid \text{ETA}_j = \text{MapsClient}(C, W_j).\text{duration} \}\Big)$$
+
+---
+
+## 🔄 Core Execution Sequences & Workflows
+
+### 1. Hyperlocal Match & Dispatch Loop
+
+The system operates a multi-stage dispatch model when a customer creates a booking:
+
+```mermaid
+sequenceDiagram
+    participant Customer as Customer Client
+    participant API as Backend Server
+    participant Redis as Redis Geo Index
+    participant DB as PostgreSQL (PostGIS)
+    participant Maps as Google Maps Matrix
+    participant Worker as Worker Clients (Top 5)
+
+    Customer->>API: Create Booking (pickupLat, pickupLng, serviceId)
+    API->>DB: Resolve boundary (ST_Covers)
+    DB-->>API: Operational City ID
+    API->>DB: Fetch city pricing & calculate totalPrice
+    API->>DB: Insert Booking (Status: PENDING)
+    API->>API: Asynchronously invoke dispatchBooking()
+    API->>Redis: GEOSEARCH active_workers (Radius: 5.0 km)
+    Redis-->>API: List of nearby worker userIds & distances
+    API->>DB: Filter workers (Online, IDLE, Verified, Category match)
+    DB-->>API: Active Worker Profiles
+    API->>Maps: Query Distance Matrix (Origin: Customer, Destinations: Worker coords)
+    Maps-->>API: Road distances & ETA values
+    API->>API: Sort by ETA ascending & select top 5
+    API->>Worker: Broadcast socket ("job:broadcast") & FCM notification
 ```
 
-#### 🔵 2. Admin Dashboard Panel (Vite Web App)
-Starts the Admin portal locally:
-```bash
-bun run admin
+### 2. Concurrency-Safe Booking Acceptance
+
+To prevent double allocation under concurrent worker acceptance, booking requests are protected by a Redis distributed lock:
+
+```mermaid
+sequenceDiagram
+    participant Worker as Worker Client
+    participant API as Backend Server
+    participant Redis as Redis Lock Manager
+    participant DB as PostgreSQL Database
+    participant Sockets as WebSocket Gateway
+
+    Worker->>API: Accept Job (bookingId, workerUserId)
+    API->>Redis: SET booking:lock:id workerUserId NX PX 5000
+    alt Lock Acquired (Success)
+        Redis-->>API: OK
+        API->>DB: Query Booking Status (Confirm PENDING)
+        alt Status is PENDING
+            API->>DB: Transaction: Update Booking (ACCEPTED) & Worker (ASSIGNED)
+            DB-->>API: Transaction Success
+            API->>Redis: ZREM active_workers workerUserId
+            API->>Sockets: Emit state transition ("job:state_changed", status: ACCEPTED)
+            API-->>Worker: HTTP 200 OK (Assigned)
+        else Status already updated (Stale)
+            API-->>Worker: HTTP 400 Bad Request (Already Accepted)
+            API->>Redis: DEL booking:lock:id
+        end
+    else Lock Acquisition Failed (Conflict)
+        Redis-->>API: NULL
+        API-->>Worker: HTTP 409 Conflict (Job accepted by another technician)
+    end
 ```
 
-#### 🟡 3. Customer Web App (Vite Web App)
-Starts the customer portal for booking services on the browser:
-```bash
-bun run customer-web
+### 3. Real-Time Tracking & Heartbeat Loop
+1. **Online Registry:** Workers emit `worker:register` via socket. The server updates their database profile (`isOnline = true`, `status = IDLE`) and joins them to `city:${cityId}` and `worker:${workerId}` rooms.
+2. **Periodic Heartbeat:** Worker devices emit `worker:location_update` every 10–15 seconds.
+3. **Cache Storage:** The server updates the Redis Geo Set (`active_workers:${cityId}`) and sets worker coordinates metadata key (`worker:metadata:${workerId}`) with a Time-to-Live (TTL) of 30 seconds.
+4. **Stream Broadcast:** If the worker is fulfilling an active job (`bookingId` present), the coordinates are immediately routed via socket to the customer's room:
+   `io.to("booking:bookingId").emit("worker:location_stream", coordinates)`
+5. **Auto-Cleanup:** Upon socket disconnect, the server calls `TrackingService.removeWorker()` which deletes keys in Redis and transitions the database profile to `OFFLINE`.
+
+### 4. Settlement & Payout Sequence
+When a worker updates a booking to `COMPLETED`:
+1. Database transaction credits the worker's earnings (`totalEarnings` incremented by `workerCut`).
+2. A detailed `WorkerEarningLog` is created for accounting.
+3. The worker is unregistered from the active job room, their status changes to `IDLE`, and their coordinate node is re-indexed back to the Redis `active_workers` pool for immediate reallocation.
+
+---
+
+## 🗄️ Database & Schema Design
+
+NearPro uses **PostgreSQL + PostGIS** mapped via **Prisma ORM**. Key configurations and enums include:
+
+```prisma
+enum Role {
+  CUSTOMER
+  WORKER
+  ADMIN
+}
+
+enum WorkerStatus {
+  OFFLINE
+  IDLE
+  ASSIGNED
+  EN_ROUTE
+  IN_PROGRESS
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  EN_ROUTE
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
 ```
 
-#### 📱 4. Customer Mobile Application (Expo App - Port: 8081)
-Starts the customer app for Android/iOS:
-```bash
-bun run customer-mobile
-```
-*Press `a` for Android emulator, `i` for iOS simulator, or scan the QR code using the **Expo Go** app on your phone.*
+### Key Models & Spatial Columns
+* **WorkerProfile:** Holds physical attributes and earnings. Contains `location` which uses `Unsupported("geography(Point, 4326)")` mapped to a PostGIS spatial point.
+* **City:** Represents operational boundaries. Contains `boundary` mapped as `Unsupported("geography(Polygon, 4326)")` to allow geo-containment checks.
+* **Booking:** Tracks coordinate markers (`pickupLat`, `pickupLng`), transaction payouts (`platformCut`, `workerCut`), and references relationships with `User`, `City`, and `Service`.
+* **WorkerLocationHistory:** Tracks chronological worker coordinates for audit logging and route mapping.
 
-#### 👷 5. Partner Mobile Application (Expo App - Port: 8082)
-Starts the service provider/worker app for Android/iOS:
-```bash
-bun run partner-mobile
-```
-*Press `a` for Android emulator, `i` for iOS simulator, or scan the QR code using the **Expo Go** app on your phone.*
+---
 
-#### 📝 6. Snabit Sandbox Client (Vite Web App)
-Starts the Snabit code executor client:
-```bash
-cd snabit/client && bun run dev
-```
+## 🛠️ Tech Stack & Justifications
+
+* **Express.js on Bun:** Bun is used for faster runtime executions, natively handling TypeScript transpilation and boosting request throughput.
+* **Socket.IO + Redis Adapter:** Enables scaling across multiple server instances by coordinating pub/sub state channels over a centralized Redis cluster.
+* **PostgreSQL + PostGIS:** Provides transactional ACID guarantees combined with native database-level geometry calculations for geofences.
+* **Redis Cache:** Ultra-low latency location tracking index and distributed locking manager.
+* **React Native (Expo):** Unified codebase for cross-platform iOS and Android mobile app distribution.
+* **Leaflet Maps:** Lightweight open-source interactive mapping wrapper for web and native UI.
 
 ---
 
 ## 📁 Repository Structure
+
 ```
 NearPro/
-├── admin-app/           # React Admin Dashboard
-├── customer-app/        # React Native Customer App (Expo)
-├── customer-web-app/    # React Customer Web Portal (Vite)
-├── partner-app/         # React Native Worker App (Expo)
-├── snabit/              # Sandbox/Playground Client & Submodule
-├── src/                 # Backend Core Code (Express, Socket.io, Modules)
-│   ├── config/          # Configurations (Prisma, Redis, etc.)
-│   ├── middlewares/     # Auth & Error middlewares
-│   ├── modules/         # API Features (bookings, auth, workers, etc.)
-│   └── socket/          # Socket.io Location Streaming & Handlers
-├── prisma/              # Prisma DB schemas & seed script
-├── docker-compose.yml   # Postgres & Redis config
-└── package.json         # Main workspaces script manager
+├── admin-app/                # React Admin Dashboard (Vite + TypeScript)
+│   ├── src/pages/            # Management pages (Workers.tsx, Services.tsx, Cities.tsx)
+│   └── src/context/          # Admin context & API wrappers
+├── customer-web-app/         # Customer Web Portal (React + Vite + Leaflet)
+│   ├── src/components/       # UI Components (TrackingView.tsx, BookingForm.tsx)
+│   └── src/App.tsx           # Customer flow coordinator
+├── customer-app/             # Customer Cross-Platform Mobile Application (Expo)
+├── partner-app/              # Partner/Worker Cross-Platform Mobile Application (Expo)
+├── snabit/                   # Code sandbox system
+│   └── client/               # React client playground for executing javascript snippets
+├── src/                      # Backend Core Application
+│   ├── config/               # Database, Redis, Maps, and Firebase clients
+│   ├── middlewares/          # Auth, role-validation, and error handler middlewares
+│   ├── modules/              # Segmented feature APIs
+│   │   ├── auth/             # Session signup / login controller
+│   │   ├── bookings/         # Booking creation and dispatch service logic
+│   │   ├── cities/           # Operational city boundaries management
+│   │   ├── tracking/         # Location streaming, nearby worker searches
+│   │   └── transactions/     # Payment creation, gateway webhook handlers
+│   ├── socket/               # Socket.io connection setup and event handlers
+│   └── server.ts             # Application entry point & service bootstrappers
+├── prisma/                   # DB migrations, database configuration schema, and seed scripts
+├── docker-compose.yml        # Multi-container orchestration (PostGIS, Redis)
+└── package.json              # Main project workspace script definitions
 ```
+
+---
+
+## ⚙️ Environment Configurations
+
+Create a `.env` file in the root directory:
+```bash
+cp .env.example .env
+```
+
+| Variable Name | Description | Default / Example Value |
+| :--- | :--- | :--- |
+| `PORT` | Local express HTTP server port | `4000` |
+| `NODE_ENV` | App execution environment mode | `development` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgrespassword@localhost:5432/nearpro?schema=public` |
+| `REDIS_URL` | Redis connection URL | `redis://localhost:6379` |
+| `JWT_SECRET` | Secret key for JWT signing | `your-jwt-secret-key` |
+| `GOOGLE_MAPS_API_KEY` | Key for Google maps matrix API | `your-google-maps-api-key` |
+| `FIREBASE_PROJECT_ID` | Project ID for push fallbacks | `your-firebase-project-id` |
+
+---
+
+## 🚀 Installation & Local Development Setup
+
+### Prerequisites
+Make sure your development machine has:
+* [Bun Runtime](https://bun.sh/) (version 1.0+)
+* [Node.js](https://nodejs.org/) (version 18+)
+* [Docker Desktop](https://www.docker.com/)
+* [Expo Go](https://expo.dev/client) app installed on your physical mobile testing device.
+
+---
+
+### Step-by-Step Installation
+
+#### 1. Install Workspace Dependencies
+Execute the unified bun commands from the root directory to install all packages for all workspaces:
+```bash
+# Install root backend dependencies
+bun install
+
+# Install UI modules and application workspaces
+cd admin-app && bun install && cd ..
+cd customer-web-app && bun install && cd ..
+cd customer-app && bun install && cd ..
+cd partner-app && bun install && cd ..
+cd snabit/client && bun install && cd ../..
+```
+
+#### 2. Start PostgreSQL & Redis Containers
+Fire up the background databases via Docker Compose:
+```bash
+# This starts PostGIS PostgreSQL and Redis in detached mode
+bun run redis:up
+```
+
+#### 3. Database Initialization & Seeding
+Push the database schema models and apply default city geofences, pricing rates, and admin configurations:
+```bash
+# Push database structures
+bun run db:push
+
+# Run seed scripts
+bun run db:seed
+```
+
+#### 4. Run the Application Servers
+Open separate terminal screens and boot up the desired application instances:
+
+```bash
+# Boot Express Backend API & Sockets
+bun run backend
+
+# Boot Admin Portal
+bun run admin
+
+# Boot Customer Web Portal
+bun run customer-web
+
+# Boot Customer Mobile Client
+bun run customer-mobile
+
+# Boot Partner/Worker Mobile Client
+bun run partner-mobile
+```
+
+---
+
+## 🔬 Theoretical Roadmaps & Enhancements
+
+1. **Surge Pricing Algorithms:** Implementing dynamic coefficient models $P_s = P_b \times (1 + \alpha(\frac{\text{Demand}}{\text{Supply}}))$ based on hyperlocal query frequency.
+2. **Predictive Dispatch Allocation:** Utilizing historic order tracks to forecast spatial provider demand before bookings are submitted.
+3. **Offline Location Queues:** Allowing partner mobile apps to cache location traces locally in SQLite database during network dropouts and batch-sync them to server history upon reconnection.
